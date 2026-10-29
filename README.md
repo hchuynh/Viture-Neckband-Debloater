@@ -293,7 +293,28 @@ The plain Android interface has no pointer for the neckband buttons, which is wh
 | Single press on the neckband Settings key | Viture's 3D home, unchanged |
 | Long press on the Settings key | Recenter, unchanged |
 
-TV Home has no interface of its own and uses practically no resources. It needs two permissions that `tvhome install` grants over adb: **usage access**, to know whether Google TV is in front, and **secure settings**, for the head-gaze button. It requires the Google TV app to be installed.
+TV Home has no interface of its own and uses practically no resources. It needs permissions that `tvhome install` grants over adb: **usage access**, to know whether Google TV is in front; **secure settings**, for the head-gaze button and startup routine; and the **accessibility service** for the floating controls. It requires the Google TV app to be installed.
+
+### Floating controls
+
+The plain Android interface relies on gestures a head-gaze cursor cannot perform: closing an app means swiping its card up in Recents, and the notification shade only opens with a drag from the top edge. Full-screen apps also hide the taskbar.
+
+TV Home adds a small round **☰ button** on the right edge of the screen that stays on top of every app, full-screen ones included. Click it to open a panel:
+
+| Button | What it does |
+|---|---|
+| **Close app** | Closes the app you are using (opens Recents, swipes its card up, returns Home) |
+| **Close all apps** | Clears Recents (uses Android's Clear all button when available, otherwise swipes each card) |
+| **Notifications** | Opens the notification shade |
+| **Quick settings** | Opens quick settings |
+| **Volume down / up** | Changes media volume, also while head gaze has the volume keys disabled |
+| **Head gaze** | Switches head tracking on or off |
+
+The panel closes after a choice or after 8 seconds. Back, Home and Recents remain on the taskbar, bottom right.
+
+The controls run as an Android **accessibility service** called *TV Home controls*, the only kind of app allowed to draw over full-screen apps and perform gestures without root. It reads the Recents screen only when you press a Close button, does nothing in the background, and stores or sends nothing. `tvhome install` enables it next to any accessibility services you already use; `tvhome uninstall` removes only it. You can also switch it off in **Settings → Accessibility → TV Home controls**.
+
+Closing apps is about tidiness, not battery: Android's app freezer already freezes apps left in the background after about 10 minutes, so they stop using power.
 
 ### Head gaze at every startup
 
@@ -437,9 +458,11 @@ Environment
 | `adb pair` is not a known command | Your adb is older than platform-tools 30. Install a current version. |
 | adb crashes with `fdsan` or `daemon didn't ACK` | Some adb builds crash on mDNS inside virtual machines. Prefix commands with `VND_NO_MDNS=1`. |
 | `this is '…', not a VITURE Neckband` | VND only supports model `V1231`. `--force` overrides it at your own risk. |
-| Volume keys do nothing | Head gaze is on (Viture behavior). Use the Head gaze button, a Bluetooth headset or the app's volume control. |
+| Volume keys do nothing | Head gaze is on (Viture behavior). Use the floating ☰ button → Volume, or switch head gaze off. |
 | Hand gestures came back | A double press on the Settings key toggles them. Double press again or `apply gestures`. |
-| No cursor in the plain interface | Head gaze is off. Use the Head gaze button or `apply gestures`. |
+| No cursor in the plain interface | Head gaze is off. Use the floating ☰ button → Head gaze, or `apply gestures`. |
+| The ☰ button is missing | The accessibility service is off. Settings → Accessibility → TV Home controls, or run `tvhome install` again. |
+| Close app did nothing | Recents took longer than usual to open. Press it again; on a slow first launch after boot this can happen once. |
 | A Bluetooth controller stopped working | Roll back the `experimental` journal or `configure` → set `com.eden.vaservice` to stock. |
 | An app you need is missing | It was disabled. `configure`, set it to stock, `apply`. |
 | Something came back after a system update | Updates can re-enable apps. `status`, then `apply recommended`. |

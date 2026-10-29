@@ -6,7 +6,7 @@
 #  Works with bash 3.2+ (macOS default) and Linux.
 # =============================================================================
 set -u
-VERSION="1.1.0"
+VERSION="1.2.0"
 ROOT="$(cd "$(dirname "$0")" && pwd)"
 LISTS="$ROOT/lists"
 STATE="$ROOT/state"
@@ -18,6 +18,7 @@ TVHOME_APK="$ROOT/tvhome/TVHome.apk"
 TVHOME_PKG="com.hoang.vhome"
 TVHOME_HOME="$TVHOME_PKG/.HomeActivity"
 TVHOME_TILE="$TVHOME_PKG/.HeadGazeTile"
+TVHOME_A11Y="$TVHOME_PKG/$TVHOME_PKG.ControlService"
 STOCK_HOME="com.android.launcher3/com.android.searchlauncher.SearchLauncher"
 mkdir -p "$JOURNALS" "$SNAPS" "$BACKUPS"
 
@@ -418,7 +419,7 @@ cmd_restore_stock(){ preflight
   for f in "$LISTS"/pkg_*.txt; do rows "$f" | while IFS='|' read -r p r d; do installed "$p" && sh_ pm enable --user 0 "$p" >/dev/null && ok "enabled $p"; done; done
   rows "$LISTS/perms_ai.txt" | while IFS='|' read -r p perm; do sh_ pm grant "$p" "$perm" 2>/dev/null; done
   rows "$LISTS/background.txt" | while read -r p; do installed "$p" && sh_ cmd appops set "$p" RUN_ANY_IN_BACKGROUND allow; done
-  if installed "$TVHOME_PKG"; then sh_ cmd package set-home-activity --user 0 "$STOCK_HOME" >/dev/null; a uninstall "$TVHOME_PKG" >/dev/null; ok "TV Home removed, stock launcher is home"; fi
+  if installed "$TVHOME_PKG"; then cmd_tvhome uninstall; fi
   for f in "$JOURNALS"/*.journal; do [ -f "$f" ] && mv "$f" "$f.undone"; done
   info "stock state restored. A reboot is recommended."; }
 
@@ -437,11 +438,19 @@ cmd_tvhome(){ preflight; case "${1:-}" in
     jw "home|$cur"
     sh_ cmd package set-home-activity --user 0 "$TVHOME_HOME" >/dev/null
     sh_ cmd statusbar add-tile "$TVHOME_TILE" >/dev/null 2>&1
+    local acc accon; acc="$(sh_ settings get secure enabled_accessibility_services)"; accon="$(sh_ settings get secure accessibility_enabled)"
+    case "$acc" in *ControlService*) ;; *)
+      jw "setting|secure|enabled_accessibility_services|$acc"; jw "setting|secure|accessibility_enabled|$accon"
+      if [ -z "$acc" ] || [ "$acc" = null ]; then acc="$TVHOME_A11Y"; else acc="$acc:$TVHOME_A11Y"; fi
+      sh_ settings put secure enabled_accessibility_services "$acc"; sh_ settings put secure accessibility_enabled 1;; esac
     ok "TV Home installed: Home opens Google TV, Home again opens the app list"
-    ok "\"Head gaze\" button added to quick settings"
+    ok "\"Head gaze\" button added to quick settings; head gaze is switched on at every boot"
+    ok "floating control button enabled: Close app, Close all, Notifications, Quick settings, Volume, Head gaze"
     ok "rollback journal: ${J#$ROOT/}";;
   uninstall)
     sh_ cmd package set-home-activity --user 0 "$STOCK_HOME" >/dev/null; sh_ cmd statusbar remove-tile "$TVHOME_TILE" >/dev/null 2>&1
+    local acc; acc="$(sh_ settings get secure enabled_accessibility_services | tr ':' '\n' | grep -v ControlService | paste -sd: -)"
+    if [ -z "$acc" ]; then sh_ settings delete secure enabled_accessibility_services >/dev/null; else sh_ settings put secure enabled_accessibility_services "$acc"; fi
     a uninstall "$TVHOME_PKG" >/dev/null 2>&1; ok "TV Home removed, stock launcher is home";;
   *) die "usage: tvhome install | uninstall";;
   esac; }
@@ -496,7 +505,7 @@ Unofficial community tool, not affiliated with VITURE. No warranty: read DISCLAI
     apply recommended          radios ui bloat ai startup gestures
     apply <module...>          $MODULES
     apply all                  Everything, including background + experimental
-    tvhome install|uninstall   Google TV as home (Home toggles to the app list) + Head gaze tile
+    tvhome install|uninstall   Google TV home, Head gaze tile, floating controls (close apps, notifications, volume)
 
   ${B}Undo${N}
     journals                   List rollback journals
