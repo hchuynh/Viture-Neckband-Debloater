@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.3.0 (unreleased, pending hover test on device)
+
+- TV Home 1.3.0: the control button is invisible until the cursor hovers over its spot in the taskbar row, fades out 1.5 s after the cursor leaves; the panel stays open while hovered and closes 2 s after the cursor leaves (8 s if never hovered). Clicking the spot still opens it if hover is unavailable.
+
 ## 1.2.1 (2026-10-29)
 
 - TV Home 1.2.1: the control button sits in the taskbar row next to Back/Home/Recents, matching its color; the panel opens upward above it.
