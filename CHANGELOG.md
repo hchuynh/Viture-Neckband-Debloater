@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.5.0 (2026-10-29)
+
+- TV Home 1.5.0: also switches hand gestures off at every boot (Viture's firmware turns them back on), only while the flag `vnd_gestures_off` is set.
+- `gestures` module sets `vnd_gestures_off`; its rollback and `restore-stock` remove it, so other users' gesture choice is never overridden.
+
 ## 1.4.0 (2026-10-29)
 
 - README and FINDINGS: final battery results of a full `battery-test` run (stock about 1 h; tuned 2 h 22 min from 100% to shutdown, 34.9% per hour while streaming), with a level and voltage chart showing the worn-cell collapse below 40%.
