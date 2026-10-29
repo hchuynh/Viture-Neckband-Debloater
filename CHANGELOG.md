@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.0.1 (2026-10-29)
+
+- DISCLAIMER.md: unofficial status, no warranty, warranty and terms of service, security of wireless debugging, privacy, physical safety, AI agents, trademarks, copyright.
+- One-time disclaimer acknowledgement before the first change.
+- README rewritten as a complete step-by-step guide with troubleshooting, FAQ and contribution rules.
+- CLAUDE.md: security, privacy and legal rules for agents.
+
 ## 1.0.0 (2026-10-29)
 
 - First release: `vnd.sh` with modules `radios`, `ui`, `bloat`, `ai`, `startup`, `gestures`, `background`, `experimental`.

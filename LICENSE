@@ -20,5 +20,14 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
-VITURE is a trademark of its respective owner. This project is not affiliated
-with or endorsed by VITURE.
+---------------------------------------------------------------------------
+Notices
+
+This project is unofficial and is not affiliated with or endorsed by VITURE.
+VITURE, Android, Google TV and all other product names are trademarks of their
+respective owners and are used only to identify compatible products.
+
+The repository contains no third-party source code, firmware, images or
+documentation. The TV Home app is built with the Android SDK, which is subject
+to its own license terms, and references a standard Android system icon at
+runtime without bundling it. See DISCLAIMER.md for the full disclaimer.

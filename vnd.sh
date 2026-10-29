@@ -6,7 +6,7 @@
 #  Works with bash 3.2+ (macOS default) and Linux.
 # =============================================================================
 set -u
-VERSION="1.0.0"
+VERSION="1.0.1"
 ROOT="$(cd "$(dirname "$0")" && pwd)"
 LISTS="$ROOT/lists"
 STATE="$ROOT/state"
@@ -54,6 +54,15 @@ preflight(){
     [ "$FORCE" = 1 ] || die "this is '$model/$dev', not a VITURE Neckband. Refusing (use --force at your own risk)."
     warn "unsupported device $model/$dev, continuing because of --force"
   fi; }
+
+acknowledge(){ # one-time disclaimer acknowledgement before the first change
+  [ "$DRY" = 1 ] && return; [ -f "$STATE/.disclaimer-accepted" ] && return
+  echo; info "${B}Before the first change${N}"
+  echo "  VND is an unofficial community tool, not affiliated with or endorsed by VITURE."
+  echo "  It is provided as is, without warranty. Changes are reversible by design, but you use it at your own risk."
+  echo "  Check VITURE's terms and your local law regarding warranty. Full text: DISCLAIMER.md"
+  if [ "$YES" = 1 ]; then warn "accepted via --yes"; else confirm "I have read DISCLAIMER.md and accept it" || die "not accepted, nothing changed"; fi
+  date > "$STATE/.disclaimer-accepted"; }
 
 protected(){ rows "$LISTS/never_touch.txt" | grep -qx "$1"; }
 installed(){ sh_ pm list packages "$1" | grep -qx "package:$1"; }
@@ -160,6 +169,7 @@ cmd_apply(){ [ $# -ge 1 ] || die "usage: apply <module...|recommended|all> [--dr
   preflight; local mods="" m
   for m in "$@"; do case "$m" in recommended) mods="$mods $RECOMMENDED";; all) mods="$mods $MODULES";; *) echo " $MODULES " | grep -q " $m " || die "unknown module '$m'. Modules: $MODULES"; mods="$mods $m";; esac; done
   [ "$DRY" = 1 ] && info "${Y}dry run: nothing will change${N}"
+  acknowledge
   for m in $mods; do echo; info "${B}[$m]${N} $(describe "$m")"; jopen "$m"; "mod_$m"; sleep 1
     if [ "$DRY" = 0 ] && [ -f "$J" ]; then ok "rollback journal: ${J#$ROOT/}"; fi
   done; echo; [ "$DRY" = 1 ] || info "done. Undo anytime with: ./vnd.sh rollback --last   (or ./vnd.sh journals)"; }
@@ -256,7 +266,7 @@ apply_pending(){
   echo; info "${B}$n change(s)${N}"
   for ((i=0;i<NI;i++)); do [ "${DES[i]}" != "${CUR[i]}" ] && printf '    %-6s %s\n' "$([ "${DES[i]}" = T ] && echo tune || echo stock)" "$(item_id "$i")"; done
   [ "$DRY" = 1 ] && { info "${Y}dry run: nothing changed${N}"; return 0; }
-  confirm "Apply these changes?" || { warn "not applied"; return 0; }
+  acknowledge; confirm "Apply these changes?" || { warn "not applied"; return 0; }
   jopen configure
   for ((i=0;i<NI;i++)); do [ "${DES[i]}" != "${CUR[i]}" ] && apply_item "$i"; done
   [ -f "$J" ] && ok "rollback journal: ${J#$ROOT/}"
@@ -336,6 +346,7 @@ cmd_restore_stock(){ preflight
 
 cmd_tvhome(){ preflight; case "${1:-}" in
   install)
+    acknowledge
     [ -f "$TVHOME_APK" ] || die "missing $TVHOME_APK (build it with tvhome/build.sh)"
     installed com.google.android.videos || die "Google TV (com.google.android.videos) is not installed"
     jopen tvhome
@@ -388,6 +399,7 @@ cmd_backup(){ preflight; local D="$BACKUPS/$(date +%Y%m%d-%H%M%S)"; mkdir -p "$D
 
 usage(){ cat <<EOF
 ${B}VND $VERSION - Viture Neckband Debloater${N}   no root, no uninstalls, everything reversible
+Unofficial community tool, not affiliated with VITURE. No warranty: read DISCLAIMER.md.
 
   ${B}Setup${N}
     pair <ip:port> <code>      Pair once (Wireless debugging > Pair device with pairing code)
