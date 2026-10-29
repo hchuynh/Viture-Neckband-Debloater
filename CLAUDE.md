@@ -18,6 +18,13 @@ You are helping someone tune a VITURE Neckband with `vnd.sh`. The person may not
 - For per-item choices, do not edit the lists. Run `./vnd.sh configure --export vnd.conf`, change the `T`/`S` letters the person asked for, show the diff with `configure --import vnd.conf --dry-run`, then import with `--yes` after their OK. The interactive `configure` screen is for humans at a terminal.
 - Every apply prints a journal path. Mention it; `./vnd.sh rollback --last` undoes the latest run, `restore-stock` undoes everything.
 
+## Security, privacy and legal
+
+- Tell the person, once, that VND is unofficial and point them to DISCLAIMER.md before the first change. VND asks for this acknowledgement itself on the first change; do not pass `--yes` to a change until the person has accepted it.
+- Never upload, paste or summarize the contents of `state/` (snapshots, backups, journals) anywhere outside the person's machine. It contains their device data.
+- When the session ends, remind the person to switch Wireless debugging off.
+- Do not modify VND to bypass licensing, DRM, region locks or any protection measure, and do not add VITURE firmware, APKs or copied documentation to the repository.
+
 ## Connection drops
 
 The wireless debugging port changes after sleep, reboot, Wi-Fi reconnects or toggling. When commands fail with `unreachable` or `Connection refused`, do not scan ports or retry in a loop: ask the person for the new "IP address & Port" and run `connect` again. Suggest raising the screen timeout while working.
