@@ -37,7 +37,7 @@ Disney+ and YouTube, while actually playing video, used less CPU than the 3D hom
 
 **After (interim, 29 October 2026).** With VND `recommended` and TV Home, a `battery-test` run from 100% dropped to 79% in 42 minutes: 29.8% per hour, which projects to 3 h 21 min from 100% to 0%, or 2 h 41 min if the device shuts down at 20%. The full run to shutdown is in progress.
 
-**What this says about the glasses.** At that rate the system draws roughly 4.5 W in total. Most of it is the glasses' displays and the XR composition, which no setting removes; brightness is the main lever left.
+**What this says about the glasses.** At that rate the system draws roughly 4 W in total (29.8% per hour of a battery of about 13 Wh). Most of it is the glasses' displays and the XR composition, which no setting removes; brightness is the main lever left.
 
 **Android's on-screen estimate lags.** After large changes it still weights the old, heavier history. `reset-stats` and 30 to 60 minutes of use give a clean reading; the per-percent discharge steps in `dumpsys batterystats` and the `battery-test` log are the ground truth.
 
