@@ -299,7 +299,7 @@ TV Home has no interface of its own and uses practically no resources. It needs 
 
 The plain Android interface relies on gestures a head-gaze cursor cannot perform: closing an app means swiping its card up in Recents, and the notification shade only opens with a drag from the top edge. Full-screen apps also hide the taskbar.
 
-TV Home adds a small round **☰ button** on the right edge of the screen that stays on top of every app, full-screen ones included. Click it to open a panel:
+TV Home adds a **☰ button** in the taskbar row, just left of Back, Home and Recents, in the same shape and color. It stays there on top of every app, including full-screen ones that hide the taskbar. Click it to open a panel above it:
 
 | Button | What it does |
 |---|---|
@@ -310,7 +310,7 @@ TV Home adds a small round **☰ button** on the right edge of the screen that s
 | **Volume down / up** | Changes media volume, also while head gaze has the volume keys disabled |
 | **Head gaze** | Switches head tracking on or off |
 
-The panel closes after a choice or after 8 seconds. Back, Home and Recents remain on the taskbar, bottom right.
+The panel closes after a choice or after 8 seconds. The icons are original line drawings made in code, so the app bundles no third-party icon set.
 
 The controls run as an Android **accessibility service** called *TV Home controls*, the only kind of app allowed to draw over full-screen apps and perform gestures without root. It reads the Recents screen only when you press a Close button, does nothing in the background, and stores or sends nothing. `tvhome install` enables it next to any accessibility services you already use; `tvhome uninstall` removes only it. You can also switch it off in **Settings → Accessibility → TV Home controls**.
 
