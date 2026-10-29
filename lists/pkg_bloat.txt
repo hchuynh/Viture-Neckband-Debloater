@@ -1,0 +1,17 @@
+# package|risk|what it is
+com.meig.logger|safe|Diagnostic logger from the modem vendor (MeiG); background telemetry
+com.eden.report|safe|Eden (Viture platform) usage reporting
+com.eden.feedback|safe|Eden feedback app
+com.eden.recommendation|safe|Eden content recommendations
+com.google.android.feedback|safe|Google feedback reporter
+com.google.android.apps.wellbeing|safe|Digital Wellbeing
+com.google.android.apps.tachyon|safe|Google Meet
+com.google.android.apps.messaging|safe|Google Messages (the neckband has no SIM in normal use)
+com.android.egg|safe|Android version Easter egg
+com.android.dreams.basic|safe|Basic screensaver
+com.android.dreams.phototable|safe|Photo screensaver
+com.android.bips|safe|Built-in print service
+com.google.android.printservice.recommendation|safe|Print service recommender
+com.android.protips|safe|Home screen tips widget
+com.google.android.gms.location.history|safe|Google Maps Timeline
+com.example.android.systemupdatersample|safe|AOSP sample app left in the firmware

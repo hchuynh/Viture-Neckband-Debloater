@@ -1,0 +1,32 @@
+# Packages the debloater refuses to disable, even with --force.
+# Disabling any of these can break the XR layer, input, updates, the Play Store or the system UI.
+android
+com.android.systemui
+com.android.settings
+com.android.phone
+com.android.bluetooth
+com.android.launcher3
+com.android.providers.settings
+com.android.vending
+com.google.android.gms
+com.google.android.gsf
+com.google.android.webview
+com.google.android.permissioncontroller
+com.google.android.packageinstaller
+com.google.android.inputmethod.latin
+com.google.android.apps.turbo
+com.google.android.videos
+com.google.android.setupwizard
+com.viture.xr
+com.viture.launcher
+com.viture.setupwizard
+com.viture.clean
+com.eden.settings
+com.eden.systemupgrade
+com.eden.license.service
+com.eden.modelserver
+com.eden.aircast
+com.eden.screenshot
+com.eden.screenrecord
+com.eden.videoplayer.main
+com.hoang.vhome

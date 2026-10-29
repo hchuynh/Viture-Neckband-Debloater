@@ -1,0 +1,2 @@
+# package|risk|what it is
+com.eden.vaservice|experimental|Eden assistant service: voice assistant + gamepad service. Bluetooth game controllers may need it

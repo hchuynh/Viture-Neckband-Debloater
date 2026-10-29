@@ -1,0 +1,57 @@
+package com.hoang.vhome;
+import android.app.Activity;
+import android.app.usage.UsageEvents;
+import android.app.usage.UsageStatsManager;
+import android.content.ComponentName;
+import android.content.Intent;
+import android.os.Bundle;
+import android.os.SystemClock;
+import android.provider.Settings;
+
+/** Home toggle: Home opens Google TV; Home while Google TV is in front opens the stock launcher. */
+public class HomeActivity extends Activity {
+    static final String GTV = "com.google.android.videos";
+    static final ComponentName LAUNCHER =
+        new ComponentName("com.android.launcher3", "com.android.searchlauncher.SearchLauncher");
+    static long lastPress = 0;
+
+    @Override protected void onCreate(Bundle b) { super.onCreate(b); route(); finish(); }
+    @Override protected void onNewIntent(Intent i) { super.onNewIntent(i); route(); finish(); }
+
+    private void route() {
+        long now = SystemClock.elapsedRealtime();
+        String fg = lastForeground();
+        // Without usage access, fall back to a double press within 2.5 s.
+        boolean toLauncher = (fg != null) ? GTV.equals(fg) : (now - lastPress) < 2500;
+        lastPress = now;
+        Intent i = null;
+        if (!toLauncher) i = getPackageManager().getLaunchIntentForPackage(GTV);
+        if (i == null) i = new Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME).setComponent(LAUNCHER);
+        i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        try { startActivity(i); }
+        catch (Exception e) {
+            try { startActivity(new Intent(Settings.ACTION_HOME_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)); }
+            catch (Exception ignored) { }
+        }
+    }
+
+    private String lastForeground() {
+        try {
+            UsageStatsManager u = getSystemService(UsageStatsManager.class);
+            long end = System.currentTimeMillis();
+            UsageEvents ev = u.queryEvents(end - 6L * 3600 * 1000, end);
+            UsageEvents.Event e = new UsageEvents.Event();
+            String last = null;
+            while (ev.hasNextEvent()) {
+                ev.getNextEvent(e);
+                if (e.getEventType() != UsageEvents.Event.ACTIVITY_RESUMED) continue;
+                String pkg = e.getPackageName();
+                if (getPackageName().equals(pkg)) continue;
+                // launcher3 also runs a placeholder on the glasses' HDMI display: only its real launcher counts
+                if ("com.android.launcher3".equals(pkg) && !LAUNCHER.getClassName().equals(e.getClassName())) continue;
+                    last = e.getPackageName();
+            }
+            return last;
+        } catch (Exception ex) { return null; }
+    }
+}

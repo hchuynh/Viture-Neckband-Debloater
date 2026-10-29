@@ -1,0 +1,8 @@
+# namespace|key|value|stock|what it does     ("-" means: setting deleted)
+global|wifi_scan_always_enabled|0|1|Stop Wi-Fi scanning while Wi-Fi is off
+global|ble_scan_always_enabled|0|1|Stop Bluetooth scanning while Bluetooth is off
+global|mobile_data_always_on|0|1|Do not keep the cellular radio up next to Wi-Fi
+global|mobile_data|0|1|Mobile data off (no SIM in normal use)
+secure|location_mode|0|3|Location off (turn it on from quick settings when an app needs it)
+global|stay_on_while_plugged_in|0|1|Allow sleep while charging
+system|screen_off_timeout|600000|2147483647|Sleep after 10 minutes without input (stock: never)
