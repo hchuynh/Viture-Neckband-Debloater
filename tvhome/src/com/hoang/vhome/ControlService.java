@@ -7,9 +7,11 @@ import android.graphics.drawable.GradientDrawable;
 import android.media.AudioManager;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.SystemClock;
 import android.provider.Settings;
 import android.util.DisplayMetrics;
 import android.view.Gravity;
+import android.view.MotionEvent;
 import android.view.WindowManager;
 import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityNodeInfo;
@@ -20,7 +22,8 @@ import java.util.List;
 /**
  * Control button for head-gaze navigation, placed in the taskbar row next to Back/Home/Recents.
  * It is invisible until the cursor hovers over its spot (or the spot is clicked), and fades out
- * 1.5 s after the cursor leaves, so it never covers full-screen apps.
+ * 1.5 s after the cursor leaves, so it never covers full-screen apps. The panel stays open until
+ * a click outside it or a second click on the button; volume and head gaze keep it open.
  * Click it to open a panel with Close app, Close all apps, Notifications, Quick settings,
  * Volume down/up and Head gaze. Closing works the way a finger would: open Recents and swipe the card up.
  */
@@ -34,7 +37,7 @@ public class ControlService extends AccessibilityService {
     private WindowManager wm;
     private TextView fab;
     private HoverFrame fabFrame, panel;
-    private final Runnable autoHide = this::hidePanel;
+    private long closedByOutsideAt = 0;   // so a click on the button that closes the panel does not reopen it
     private final Runnable fadeOut = () -> { if (panel == null && fab != null) fab.animate().alpha(0f).setDuration(350).start(); };
 
     @Override public void onAccessibilityEvent(AccessibilityEvent e) { }
@@ -50,7 +53,11 @@ public class ControlService extends AccessibilityService {
         fab.setCompoundDrawablesRelative(menu, null, null, null);
         fab.setPadding(pad, pad, pad, pad);
         fab.setContentDescription("TV Home controls");
-        fab.setOnClickListener(v -> { reveal(); togglePanel(); });
+        fab.setOnClickListener(v -> {
+            reveal();
+            if (panel == null && SystemClock.uptimeMillis() - closedByOutsideAt < 400) return;
+            togglePanel();
+        });
         fab.setAlpha(0f);   // invisible until the cursor moves onto its spot
         fabFrame = new HoverFrame(this, inside -> { if (inside) reveal(); else concealSoon(); });
         fabFrame.addView(fab, new HoverFrame.LayoutParams(dp(SIZE_DP), dp(SIZE_DP)));
@@ -78,9 +85,13 @@ public class ControlService extends AccessibilityService {
     }
 
     private WindowManager.LayoutParams params(int w, int hgt) {
+        return params(w, hgt, 0);
+    }
+
+    private WindowManager.LayoutParams params(int w, int hgt, int extraFlags) {
         return new WindowManager.LayoutParams(w, hgt,
             WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY,
-            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE | WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
+            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE | WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN | extraFlags,
             PixelFormat.TRANSLUCENT);
     }
 
@@ -89,10 +100,15 @@ public class ControlService extends AccessibilityService {
     private LinearLayout list;
 
     private void showPanel() {
-        // keep the panel while the cursor is on it; close it 2 s after the cursor leaves (8 s if it never arrives)
-        panel = new HoverFrame(this, inside -> {
-            h.removeCallbacks(autoHide);
-            if (inside) reveal(); else h.postDelayed(autoHide, 2000);
+        // The panel stays open until a click outside it, or a second click on the button.
+        panel = new HoverFrame(this, inside -> { if (inside) reveal(); });
+        panel.setOnTouchListener((v, e) -> {
+            if (e.getActionMasked() == MotionEvent.ACTION_OUTSIDE) {
+                closedByOutsideAt = SystemClock.uptimeMillis();
+                hidePanel();
+                return true;
+            }
+            return false;
         });
         list = new LinearLayout(this);
         list.setOrientation(LinearLayout.VERTICAL);
@@ -100,44 +116,56 @@ public class ControlService extends AccessibilityService {
         list.setBackground(round(PANEL, dp(18)));
         panel.addView(list);
         boolean gaze = Settings.Global.getInt(getContentResolver(), HeadGazeTile.KEY, 0) == 1;
-        add(Icon.CLOSE, "Close app", this::closeApp);
-        add(Icon.CLOSE_ALL, "Close all apps", this::closeAll);
-        add(Icon.NOTIFICATIONS, "Notifications", () -> performGlobalAction(GLOBAL_ACTION_NOTIFICATIONS));
-        add(Icon.QUICK_SETTINGS, "Quick settings", () -> performGlobalAction(GLOBAL_ACTION_QUICK_SETTINGS));
-        add(Icon.VOLUME_DOWN, "Volume down", () -> volume(AudioManager.ADJUST_LOWER));
-        add(Icon.VOLUME_UP, "Volume up", () -> volume(AudioManager.ADJUST_RAISE));
-        add(gaze ? Icon.GAZE_ON : Icon.GAZE_OFF, gaze ? "Head gaze: on" : "Head gaze: off", this::toggleGaze);
-        WindowManager.LayoutParams lp = params(WindowManager.LayoutParams.WRAP_CONTENT, WindowManager.LayoutParams.WRAP_CONTENT);
+        // navigating actions close the panel; volume and head gaze keep it open
+        add(Icon.CLOSE, "Close app", true, b -> closeApp());
+        add(Icon.CLOSE_ALL, "Close all apps", true, b -> closeAll());
+        add(Icon.NOTIFICATIONS, "Notifications", true, b -> performGlobalAction(GLOBAL_ACTION_NOTIFICATIONS));
+        add(Icon.QUICK_SETTINGS, "Quick settings", true, b -> performGlobalAction(GLOBAL_ACTION_QUICK_SETTINGS));
+        add(Icon.VOLUME_DOWN, "Volume down", false, b -> volume(AudioManager.ADJUST_LOWER));
+        add(Icon.VOLUME_UP, "Volume up", false, b -> volume(AudioManager.ADJUST_RAISE));
+        TextView g = add(gaze ? Icon.GAZE_ON : Icon.GAZE_OFF, gaze ? "Head gaze: on" : "Head gaze: off", false, b -> {
+            toggleGaze();
+            boolean on = Settings.Global.getInt(getContentResolver(), HeadGazeTile.KEY, 0) == 1;
+            setLabel(b, on ? Icon.GAZE_ON : Icon.GAZE_OFF, on ? "Head gaze: on" : "Head gaze: off");
+        });
+        WindowManager.LayoutParams lp = params(WindowManager.LayoutParams.WRAP_CONTENT, WindowManager.LayoutParams.WRAP_CONTENT,
+            WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH);
         lp.gravity = Gravity.END | Gravity.BOTTOM;   // opens upward from the button, above the taskbar
         lp.x = dp(RIGHT_DP - 120);
         lp.y = dp(BOTTOM_DP + SIZE_DP + 10);
         wm.addView(panel, lp);
-        h.removeCallbacks(autoHide);
-        h.postDelayed(autoHide, 8000);
     }
 
     private void hidePanel() {
-        h.removeCallbacks(autoHide);
         if (panel != null) { try { wm.removeView(panel); } catch (Exception ignored) { } panel = null; }
         concealSoon();
     }
 
-    private void add(int icon, String label, Runnable action) {
-        TextView b = new TextView(this);
+    interface Action { void run(TextView button); }
+
+    private void setLabel(TextView b, int icon, String label) {
         b.setText(label);
-        b.setTextSize(20);
-        b.setTextColor(FG);
-        b.setGravity(Gravity.CENTER_VERTICAL);
         Icon d = new Icon(icon, FG, BUTTON);
         d.setBounds(0, 0, dp(26), dp(26));
         b.setCompoundDrawablesRelative(d, null, null, null);
-        b.setCompoundDrawablePadding(dp(16));
+    }
+
+    private TextView add(int icon, String label, boolean closes, Action action) {
+        TextView b = new TextView(this);
+        setLabel(b, icon, label);
+        b.setTextSize(20);
+        b.setTextColor(FG);
+        b.setGravity(Gravity.CENTER_VERTICAL);
         b.setPadding(dp(20), dp(14), dp(28), dp(14));
         b.setBackground(round(BUTTON, dp(12)));
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(dp(300), LinearLayout.LayoutParams.WRAP_CONTENT);
         lp.setMargins(0, dp(4), 0, dp(4));
-        b.setOnClickListener(v -> { hidePanel(); h.postDelayed(action, 150); });
+        b.setOnClickListener(v -> {
+            if (closes) { hidePanel(); h.postDelayed(() -> action.run(b), 150); }
+            else action.run(b);
+        });
         list.addView(b, lp);
+        return b;
     }
 
     // --- actions ---

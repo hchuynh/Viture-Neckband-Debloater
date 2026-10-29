@@ -1,8 +1,9 @@
 # Changelog
 
-## 1.3.0 (unreleased, pending hover test on device)
+## 1.3.0 (2026-10-29)
 
-- TV Home 1.3.0: the control button is invisible until the cursor hovers over its spot in the taskbar row, fades out 1.5 s after the cursor leaves; the panel stays open while hovered and closes 2 s after the cursor leaves (8 s if never hovered). Clicking the spot still opens it if hover is unavailable.
+- TV Home 1.3.1: the control button is invisible until the cursor hovers over its spot in the taskbar row and fades out 1.5 s after the cursor leaves, so it never covers full-screen apps. Clicking the spot also reveals it.
+- The panel stays open until a click outside it or a second click on the button. Volume down/up and Head gaze keep it open (Head gaze updates its label in place); Close app, Close all, Notifications and Quick settings close it.
 
 ## 1.2.1 (2026-10-29)
 
