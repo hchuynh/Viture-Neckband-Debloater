@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="control_label">TV Home controls</string>
-    <string name="control_desc">Floating button with Close app, Close all, Notifications, Quick settings, volume and head gaze, for navigating the VITURE Neckband with a head-gaze cursor. It reads the Recents screen only to close apps, and stores or sends nothing.</string>
+    <string name="control_desc">Floating button with Close app, Close all, Notifications, Quick settings, volume and head gaze, for navigating the VITURE Neckband with a head-gaze cursor. It reads the Recents screen only to close apps, listens only for the Menu key of an external controller to open the panel, and stores or sends nothing.</string>
 </resources>
