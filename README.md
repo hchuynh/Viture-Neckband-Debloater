@@ -299,7 +299,7 @@ TV Home has no interface of its own and uses practically no resources. It needs 
 
 The plain Android interface relies on gestures a head-gaze cursor cannot perform: closing an app means swiping its card up in Recents, and the notification shade only opens with a drag from the top edge. Full-screen apps also hide the taskbar.
 
-TV Home adds a **☰ button** in the taskbar row, just left of Back, Home and Recents, in the same shape and color. It stays there on top of every app, including full-screen ones that hide the taskbar. Click it to open a panel above it:
+TV Home adds a **☰ button** in the taskbar row, just left of Back, Home and Recents, in the same shape and color. It is **invisible until you move the cursor onto its spot**, then fades in; it fades out again about 1.5 seconds after the cursor leaves. It works the same over full-screen apps that hide the taskbar, without covering them. Click it to open a panel above it:
 
 | Button | What it does |
 |---|---|
@@ -310,7 +310,9 @@ TV Home adds a **☰ button** in the taskbar row, just left of Back, Home and Re
 | **Volume down / up** | Changes media volume, also while head gaze has the volume keys disabled |
 | **Head gaze** | Switches head tracking on or off |
 
-The panel closes after a choice or after 8 seconds. The icons are original line drawings made in code, so the app bundles no third-party icon set.
+The panel stays open until you **click outside it** or **click the ☰ button again**. Volume and Head gaze keep it open, so you can press Volume up several times in a row; Close app, Close all, Notifications and Quick settings close it because they take you somewhere else. A click outside the panel also reaches whatever is underneath, as with any Android overlay, so click an empty area to close it.
+
+The invisible spot still answers clicks, so it works even if a cursor never sends hover events. It is the size of one taskbar button; the rest of the screen is unaffected. The icons are original line drawings made in code, so the app bundles no third-party icon set.
 
 The controls run as an Android **accessibility service** called *TV Home controls*, the only kind of app allowed to draw over full-screen apps and perform gestures without root. It reads the Recents screen only when you press a Close button, does nothing in the background, and stores or sends nothing. `tvhome install` enables it next to any accessibility services you already use; `tvhome uninstall` removes only it. You can also switch it off in **Settings → Accessibility → TV Home controls**.
 
@@ -461,7 +463,7 @@ Environment
 | Volume keys do nothing | Head gaze is on (Viture behavior). Use the floating ☰ button → Volume, or switch head gaze off. |
 | Hand gestures came back | A double press on the Settings key toggles them. Double press again or `apply gestures`. |
 | No cursor in the plain interface | Head gaze is off. Use the floating ☰ button → Head gaze, or `apply gestures`. |
-| The ☰ button is missing | The accessibility service is off. Settings → Accessibility → TV Home controls, or run `tvhome install` again. |
+| The ☰ button is missing | It is invisible until the cursor hovers over its spot, just left of Back/Home/Recents. If it never appears, the accessibility service is off: Settings → Accessibility → TV Home controls, or run `tvhome install` again. |
 | Close app did nothing | Recents took longer than usual to open. Press it again; on a slow first launch after boot this can happen once. |
 | A Bluetooth controller stopped working | Roll back the `experimental` journal or `configure` → set `com.eden.vaservice` to stock. |
 | An app you need is missing | It was disabled. `configure`, set it to stock, `apply`. |
