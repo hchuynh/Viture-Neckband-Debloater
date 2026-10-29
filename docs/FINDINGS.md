@@ -31,9 +31,15 @@ Disney+ and YouTube, while actually playing video, used less CPU than the 3D hom
 
 **Action:** `ai` module disables the AI service; head gaze plus TV Home let you leave the 3D home.
 
-## 3. Real runtime was better than the estimate
+## 3. Runtime: before and after
 
-With the camera off, each 1% of battery took 2 min 06 s to 2 min 32 s of active use, about 25% per hour, roughly 3.4 W in total including the glasses: close to 4 hours on a full charge. Android's estimate showed under 2 hours at the same time because it still weighted the camera-heavy stretch. `reset-stats` clears that history.
+**Before.** With the stock setup (3D home, hand gestures, AI services), the owner's real-world runtime was about 1 hour. Android's average across the first battery cycle (about 1.5 A) understated the worst case, because it mixed heavy stretches with lighter ones; with the camera, the 3D home and the AI service active together the draw is far higher.
+
+**After (interim, 29 October 2026).** With VND `recommended` and TV Home, a `battery-test` run from 100% dropped to 79% in 42 minutes: 29.8% per hour, which projects to 3 h 21 min from 100% to 0%, or 2 h 41 min if the device shuts down at 20%. The full run to shutdown is in progress.
+
+**What this says about the glasses.** At that rate the system draws roughly 4.5 W in total. Most of it is the glasses' displays and the XR composition, which no setting removes; brightness is the main lever left.
+
+**Android's on-screen estimate lags.** After large changes it still weights the old, heavier history. `reset-stats` and 30 to 60 minutes of use give a clean reading; the per-percent discharge steps in `dumpsys batterystats` and the `battery-test` log are the ground truth.
 
 ## 4. Where the remaining power goes
 

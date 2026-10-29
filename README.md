@@ -10,7 +10,7 @@ Longer battery life, a quieter system and a microphone that only listens when yo
 
 ## Contents
 
-1. [What VND is](#1-what-vnd-is)
+1. [What VND is](#1-what-vnd-is) (including [battery results](#battery-results))
 2. [What it changes](#2-what-it-changes)
 3. [How it keeps your device safe](#3-how-it-keeps-your-device-safe)
 4. [Before you start](#4-before-you-start)
@@ -39,6 +39,18 @@ Every item in VND comes from measurement: two days of Android battery statistics
 **Supported device:** VITURE Neckband, model `V1231` (Android reports the device as `Neckband_Pro`), tested on Android 13 build `TKQ1.240621.001`. VND refuses to run on anything else unless you pass `--force`.
 
 ---
+
+### Battery results
+
+Measured on one refurbished unit (model `V1231`, Android 13, build `TKQ1.240621.001`) with VITURE Beast glasses, using `./vnd.sh battery-test`. **Interim result, 29 October 2026:** the full 100%-to-shutdown run is still in progress, and this table will be replaced by the final figures.
+
+| Setup | Runtime |
+|---|---|
+| Stock: 3D home, hand gestures, AI services (owner's real-world experience) | about **1 hour** |
+| VND `recommended` + TV Home, projected from 100% to 0% | **3 h 21 min** |
+| VND `recommended` + TV Home, projected to shutdown if it happens at 20% | **2 h 41 min** |
+
+Conditions of the interim run: 42 minutes from 100% to 79%, a drain of 29.8% per hour, screen always on, head gaze on, hand gestures off, battery at 27 °C on average, mostly Google TV and settings screens in the foreground. Continuous video streaming may raise the drain somewhat. Your unit, firmware and brightness will give different numbers; measure your own with `battery-test`.
 
 ## 2. What it changes
 
