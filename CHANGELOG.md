@@ -2,6 +2,7 @@
 
 ## 1.3.0 (2026-10-29)
 
+- README: the helper app explained (its four parts, every permission it uses and how to revoke it, why it is signed and how to verify the certificate fingerprint); using Claude by pointing it at the repository URL, and where Claude must run to reach the neckband.
 - TV Home 1.3.1: the control button is invisible until the cursor hovers over its spot in the taskbar row and fades out 1.5 s after the cursor leaves, so it never covers full-screen apps. Clicking the spot also reveals it.
 - The panel stays open until a click outside it or a second click on the button. Volume down/up and Head gaze keep it open (Head gaze updates its label in place); Close app, Close all, Notifications and Quick settings close it.
 

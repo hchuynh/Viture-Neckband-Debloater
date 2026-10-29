@@ -14,7 +14,7 @@ Longer battery life, a quieter system and a microphone that only listens when yo
 4. [Before you start](#4-before-you-start)
 5. [Step-by-step guide](#5-step-by-step-guide)
 6. [The configurator](#6-the-configurator)
-7. [TV Home and head-gaze navigation](#7-tv-home-and-head-gaze-navigation)
+7. [TV Home and head-gaze navigation](#7-tv-home-and-head-gaze-navigation) (the helper app, its permissions, signing)
 8. [Undoing changes](#8-undoing-changes)
 9. [Living with a tuned neckband](#9-living-with-a-tuned-neckband)
 10. [Using VND with Claude](#10-using-vnd-with-claude)
@@ -108,6 +108,8 @@ chmod +x vnd.sh
 ```
 
 Without git: on the GitHub page choose **Code → Download ZIP**, unzip it and open a terminal in the folder.
+
+Using Claude? You can skip this step and give Claude the repository address instead; see [section 10](#10-using-vnd-with-claude).
 
 ---
 
@@ -278,6 +280,44 @@ T bloat        com.meig.logger                    # [safe] Diagnostic logger fro
 
 ## 7. TV Home and head-gaze navigation
 
+### The helper app in one minute
+
+**TV Home** (`com.hoang.vhome`, about 20 KB) is a small companion app that ships with VND in [tvhome/](tvhome/), source code included. VND's script changes settings; TV Home adds the few things a settings change cannot do. It has four parts:
+
+| Part | What it does | Why it is needed |
+|---|---|---|
+| **Home toggle** | Home opens Google TV; Home again opens the stock app list | Android only lets a real home app decide what Home opens |
+| **Head gaze at startup** | Switches Headgaze Navigation on at every boot | Viture's firmware switches it off at each restart |
+| **Head gaze button** | A quick-settings button to switch head tracking on and off | Viture disables volume keys while head gaze is on |
+| **Floating controls** | A hidden ☰ button in the taskbar with Close app, Close all, Notifications, Quick settings, Volume and Head gaze | The plain interface relies on swipes and drags a head-gaze cursor cannot perform |
+
+It has no screen of its own, no background activity beyond the startup check, **no internet permission**, no analytics, and it stores nothing.
+
+### What it enables, and why
+
+`./vnd.sh tvhome install` grants each of these over adb; none of them needs root.
+
+| Permission or role | Used for | How to revoke |
+|---|---|---|
+| **Default home app** | Deciding what Home opens | Settings → Apps → Default apps → Home app |
+| **Usage access** | Knowing which app was last in front, so Home can toggle between Google TV and the app list | Settings → Apps → Special app access → Usage access |
+| **Write secure settings** (`WRITE_SECURE_SETTINGS`, grantable only over adb) | Switching Viture's head-gaze setting from the button, the panel and at boot | `adb shell pm revoke com.hoang.vhome android.permission.WRITE_SECURE_SETTINGS` |
+| **Run at startup** (`RECEIVE_BOOT_COMPLETED`) | The head-gaze check after each boot | Uninstall the app |
+| **Accessibility service** "TV Home controls" | Drawing the controls over full-screen apps, performing the Recents swipe to close apps, opening notifications and quick settings | Settings → Accessibility → TV Home controls |
+| **Quick-settings tile** | The Head gaze button in the pull-down panel | Edit the quick-settings panel |
+
+`./vnd.sh tvhome uninstall` removes the app and all of the above in one step, and the `tvhome` rollback journal restores the previous home app and accessibility settings.
+
+### Why the app is signed with a private key
+
+Android installs only apps that carry a digital signature. The signature does not unlock anything or grant permissions; it identifies the publisher, and Android uses it to accept an **update** only when it is signed with the same key as the installed copy. That is what stops someone from replacing your app with a modified version.
+
+- **To install the prebuilt app, you need nothing.** `tvhome/TVHome.apk` is already signed by the maintainer, and `tvhome install` installs it.
+- **The maintainer's private key is not in this repository and never will be.** Anyone holding it could publish fake updates that Android would accept over your copy. `.gitignore` blocks key files from being committed.
+- **You can check the signature yourself.** With the Android build tools: `apksigner verify --print-certs tvhome/TVHome.apk`. The official build's certificate SHA-256 fingerprint is
+  `f3b8e7b88ac32dcdf4315f0250ce0003933d1685059b45979d0dbd38cc2c4287`.
+- **If you build the app from source**, `tvhome/build.sh` creates a key of your own (`tvhome/tvhome.keystore`). Keep it if you want to update your own build later. Because your key differs from the maintainer's, Android refuses to install your build over the official one; `tvhome install` detects this, uninstalls the old copy and installs yours.
+
 ### Why head gaze matters
 
 The plain Android interface has no pointer for the neckband buttons, which is why most owners stay in Viture's 3D home or keep the phone remote app open. The 3D home is also the single most expensive thing the device does. **Headgaze Navigation**, switched on by the `gestures` module, gives you a cursor driven by the glasses' motion sensors in the plain interface, so you can leave the 3D home and still navigate with your head. It does not use the camera.
@@ -342,7 +382,7 @@ The source is in [tvhome/](tvhome/). With a JDK and the Android SDK:
 BUILD_TOOLS=~/Android/Sdk/build-tools/34.0.0 ANDROID_JAR=~/Android/Sdk/platforms/android-33/android.jar ./tvhome/build.sh
 ```
 
-A self-built APK is signed with your own key. `tvhome install` detects the signature change and reinstalls.
+A self-built APK is signed with your own key; see [Why the app is signed with a private key](#why-the-app-is-signed-with-a-private-key).
 
 ---
 
@@ -395,11 +435,25 @@ The report shows start and end, duration, drain per hour, projected time from 10
 
 ## 10. Using VND with Claude
 
-VND was built with Claude and is designed so anyone can let Claude operate it. Open the folder in an environment where Claude can run commands (Claude Code, or a Claude desktop session with folder access), switch on wireless debugging and paste:
+VND was built with Claude and is designed so anyone can let Claude operate it. There are two ways to start.
 
-> Use the Viture Neckband Debloater in this folder to tune my VITURE Neckband. Read CLAUDE.md first and follow it. Pair with `<ip:pairing-port>` code `<code>`, connect to `<ip:port>`, take a backup and an analysis, explain the results in plain words, and show me the dry run of `recommended`. Wait for my OK before applying anything.
+### Point Claude at the repository (no download needed)
 
-[CLAUDE.md](CLAUDE.md) gives the agent its operating rules: back up first, dry-run before applying, never touch the protected list, ask before `experimental` and `background`, use configuration files for per-item choices, ask for the new port when the connection drops, and have you check in the glasses after `gestures`. Review its proposals before approving them; see the [Disclaimer](DISCLAIMER.md).
+You do not have to download or unzip anything. Give Claude the repository address and it creates its own working folder, clones VND into it and operates from there; journals, backups and snapshots stay in that folder's `state/` directory.
+
+> Use the Viture Neckband Debloater from https://github.com/hchuynh/Viture-Neckband-Debloater to tune my VITURE Neckband. Clone it into a working folder, read CLAUDE.md first and follow it. Pair with `<ip:pairing-port>` code `<code>`, connect to `<ip:port>`, take a backup and an analysis, explain the results in plain words, and show me the dry run of `recommended`. Wait for my OK before applying anything.
+
+### Or open a folder you already downloaded
+
+Open the VND folder in an environment where Claude can run commands and paste the same request, replacing the first sentence with "Use the Viture Neckband Debloater in this folder".
+
+### Where Claude must run
+
+`adb` has to reach the neckband over your network, so Claude must work **on a computer in the same network as the neckband**: Claude Code on your computer, or a Claude desktop session linked to your computer. A session running only in the cloud cannot see devices on your home Wi-Fi unless you connect them through a private network such as Tailscale and give Claude that address. If Claude says the device is unreachable, check this first.
+
+### What Claude follows
+
+[CLAUDE.md](CLAUDE.md) gives the agent its operating rules: back up first, dry-run before applying, never touch the protected list, ask before `experimental` and `background`, use configuration files for per-item choices, ask for the new port when the connection drops, and have you check in the glasses after `gestures`. It also asks you to accept the [Disclaimer](DISCLAIMER.md) before the first change. Review its proposals before approving them.
 
 ---
 
