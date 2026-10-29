@@ -1,9 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.hoang.vhome" android:versionCode="2" android:versionName="1.0.1">
+    package="com.hoang.vhome" android:versionCode="3" android:versionName="1.1.0">
     <uses-sdk android:minSdkVersion="29" android:targetSdkVersion="33"/>
     <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS"/>
     <uses-permission android:name="android.permission.WRITE_SECURE_SETTINGS"/>
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
     <queries>
         <package android:name="com.google.android.videos"/>
         <package android:name="com.android.launcher3"/>
@@ -24,5 +25,11 @@
             <intent-filter><action android:name="android.service.quicksettings.action.QS_TILE"/></intent-filter>
             <meta-data android:name="android.service.quicksettings.TOGGLEABLE_TILE" android:value="true"/>
         </service>
+        <receiver android:name=".BootReceiver" android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED"/>
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED"/>
+            </intent-filter>
+        </receiver>
     </application>
 </manifest>

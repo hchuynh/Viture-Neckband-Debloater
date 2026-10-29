@@ -289,11 +289,15 @@ The plain Android interface has no pointer for the neckband buttons, which is wh
 | Press Home from any app or from the app list | Google TV opens |
 | Press Home while Google TV is in front | The stock app list opens |
 | Press Back out of Google TV | The stock app list opens |
-| Restart the neckband | It starts in Google TV |
+| Restart the neckband | It starts in Google TV, with head gaze switched on |
 | Single press on the neckband Settings key | Viture's 3D home, unchanged |
 | Long press on the Settings key | Recenter, unchanged |
 
 TV Home has no interface of its own and uses practically no resources. It needs two permissions that `tvhome install` grants over adb: **usage access**, to know whether Google TV is in front, and **secure settings**, for the head-gaze button. It requires the Google TV app to be installed.
+
+### Head gaze at every startup
+
+Viture's firmware switches Headgaze Navigation off at every boot. TV Home switches it back on as soon as the device starts, then checks again after 20 seconds, 1 minute and 3 minutes, while Viture's XR layer finishes starting. You can still switch it off during a session with the button below; the next restart turns it on again.
 
 ### The Head gaze button
 
@@ -347,6 +351,25 @@ Without a computer, a disabled app can be re-enabled from **Settings â†’ Apps â†
 
 ---
 
+### Measure your battery life
+
+Battery estimates on the screen are averages of recent history and lag behind changes. VND includes a real test that logs the battery once per minute on the neckband itself, so it keeps running when wireless debugging disconnects.
+
+```bash
+./vnd.sh battery-test start      # resets battery statistics and starts the logger
+./vnd.sh battery-test status     # check it is running, see the latest lines
+./vnd.sh battery-test report     # after the test: runtime, drain per hour, milestones
+```
+
+For a result you can compare with other owners:
+
+1. Charge to 100%, then unplug. The report counts from the first minute unplugged at 100%.
+2. Use the device as you normally do, glasses on, with the same brightness throughout. Streaming video is the most common reference.
+3. Let it run until the neckband shuts down. If the automatic power-off timer is enabled on your unit, switch it off first so it does not end the test early.
+4. Restart the neckband, `connect` again and run `battery-test report`.
+
+The report shows start and end, duration, drain per hour, projected time from 100% to 0%, the time at which each 10% step was reached, the share of time with the screen on, head gaze and hand gestures, battery temperature and the apps in the foreground. The log stays on your computer in `state/` and on the neckband in `Download/vnd_battery_test.csv`.
+
 ## 10. Using VND with Claude
 
 VND was built with Claude and is designed so anyone can let Claude operate it. Open the folder in an environment where Claude can run commands (Claude Code, or a Claude desktop session with folder access), switch on wireless debugging and paste:
@@ -385,6 +408,11 @@ Undo
 
 Safety
   backup [--no-media]          settings, app list, apks, shared storage
+
+Measure
+  battery-test start [--keep]  log battery every minute on the device (--keep: append to the current log)
+  battery-test status | stop
+  battery-test report          runtime, drain per hour, milestones, conditions
 
 Flags
   --dry-run                    show, change nothing

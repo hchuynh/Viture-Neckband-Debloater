@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.1.0 (2026-10-29)
+
+- `battery-test start | status | stop | report`: on-device logger (one line per minute, survives disconnects) and a report with runtime from 100% to shutdown, drain per hour, 10% milestones and test conditions.
+- TV Home 1.1.0: switches Headgaze Navigation on at every boot (Viture resets it), re-checked after 20 s, 1 min and 3 min.
+
 ## 1.0.1 (2026-10-29)
 
 - DISCLAIMER.md: unofficial status, no warranty, warranty and terms of service, security of wireless debugging, privacy, physical safety, AI agents, trademarks, copyright.

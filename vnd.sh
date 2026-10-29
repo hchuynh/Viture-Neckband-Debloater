@@ -6,7 +6,7 @@
 #  Works with bash 3.2+ (macOS default) and Linux.
 # =============================================================================
 set -u
-VERSION="1.0.1"
+VERSION="1.1.0"
 ROOT="$(cd "$(dirname "$0")" && pwd)"
 LISTS="$ROOT/lists"
 STATE="$ROOT/state"
@@ -323,6 +323,84 @@ EOM
     esac
   done; }
 
+# ---------- battery test ----------
+BT_DEV_SCRIPT=/data/local/tmp/vnd_batlog.sh
+BT_DEV_CSV=/sdcard/Download/vnd_battery_test.csv
+BT_DEV_STOP=/data/local/tmp/vnd_batlog.stop
+bt_script(){ cat <<'EOS'
+#!/system/bin/sh
+# VND battery test logger: one CSV line per minute, runs on the neckband, survives adb disconnects.
+OUT=/sdcard/Download/vnd_battery_test.csv
+[ -f $OUT ] || echo "time,uptime_s,level,voltage_mv,temp_c,charge_uah,plugged,screen,brightness,head_gaze,gestures,foreground" > $OUT
+rm -f /data/local/tmp/vnd_batlog.stop
+while [ ! -f /data/local/tmp/vnd_batlog.stop ]; do
+  B=$(dumpsys battery)
+  lvl=$(echo "$B" | grep ' level:' | tr -dc 0-9); v=$(echo "$B" | grep ' voltage:' | tr -dc 0-9); t=$(echo "$B" | grep ' temperature:' | tr -dc 0-9)
+  cc=$(echo "$B" | grep 'Charge counter' | tr -dc 0-9); pl=$(echo "$B" | grep -cE 'powered: true')
+  scr=$(dumpsys power | grep -m1 'mWakefulness=' | cut -d= -f2)
+  br=$(settings get system screen_brightness); hg=$(settings get global viture_settings_enable_head_gaze); ge=$(settings get global eden_gesture_mode)
+  fg=$(dumpsys activity activities | grep -m1 topResumedActivity | grep -oE 'u0 [^/ ]+' | cut -c4-)
+  echo "$(date '+%Y-%m-%d %H:%M:%S'),$(cut -d. -f1 /proc/uptime),$lvl,$v,$((t/10)),$cc,$pl,$scr,$br,$hg,$ge,$fg" >> $OUT
+  sleep 60
+done
+EOS
+}
+bt_running(){ sh_ 'ps -A -o ARGS' | grep -q "^sh $BT_DEV_SCRIPT"; }
+
+cmd_battery_test(){ preflight; case "${1:-}" in
+  start)
+    bt_running && die "a battery test is already running (battery-test status)"
+    local tmp="$STATE/vnd_batlog.sh"; bt_script > "$tmp"
+    a push "$tmp" "$BT_DEV_SCRIPT" >/dev/null || die "could not copy the logger"
+    if [ "${2:-}" != "--keep" ]; then sh_ rm -f "$BT_DEV_CSV"; sh_ dumpsys batterystats --reset >/dev/null; fi
+    sh_ "chmod 755 $BT_DEV_SCRIPT; nohup setsid $BT_DEV_SCRIPT >/dev/null 2>&1 </dev/null &"
+    sleep 3; bt_running || die "logger did not start"
+    ok "battery test running on the neckband, one line per minute in $BT_DEV_CSV"
+    cat <<EOM
+  Protocol for a comparable result:
+    1. Charge to 100%, then unplug. The report counts from the first minute unplugged at 100%.
+    2. Use the device the way you normally do (for example streaming), glasses on, same brightness throughout.
+    3. Let it run until it shuts down. The logger stops with the device; nothing else is needed.
+    4. After restarting: ./vnd.sh connect <ip:port> && ./vnd.sh battery-test report
+  The logger keeps running if wireless debugging disconnects.
+EOM
+    ;;
+  status)
+    if bt_running; then ok "logger running"; else warn "logger not running"; fi
+    sh_ "wc -l < $BT_DEV_CSV; tail -3 $BT_DEV_CSV" 2>/dev/null | sed 's/^/  /';;
+  stop) sh_ "touch $BT_DEV_STOP"; ok "logger will stop within a minute";;
+  report)
+    local out="$STATE/battery_test_$(date +%Y%m%d-%H%M%S).csv"
+    a pull "$BT_DEV_CSV" "$out" >/dev/null 2>&1 || die "no battery test log on the device"
+    ok "log copied to ${out#$ROOT/}"; bt_report "$out";;
+  *) die "usage: battery-test start [--keep] | status | stop | report [file]";;
+  esac; }
+
+bt_report(){ # csv -> summary (the csv is kept locally; it contains no personal data beyond app names)
+  awk -F, 'NR==1{next}
+    { n++; L[n]=$3+0; U[n]=$2+0; P[n]=$7+0; T[n]=$5+0; S[n]=$8; H[n]=$10; G[n]=$11; F[n]=$12; TM[n]=$1 }
+    END{
+      if(n<3){print "  not enough data yet"; exit}
+      s=0; for(i=1;i<=n;i++) if(P[i]==0 && L[i]==100){s=i;break}
+      full=1; if(!s){ for(i=1;i<=n;i++) if(P[i]==0){s=i;break}; full=0 }
+      if(!s){print "  the device has not been unplugged yet"; exit}
+      e=s; for(i=s+1;i<=n;i++){ if(P[i]!=0 || U[i]<U[i-1]) break; e=i }
+      dur=(U[e]-U[s])/3600; drop=L[s]-L[e]
+      printf "  start      %s at %d%%%s\n", TM[s], L[s], full?"":"  (did not start at 100%: result is extrapolated)"
+      printf "  end        %s at %d%%  (last logged minute)\n", TM[e], L[e]
+      printf "  duration   %dh %02dm for %d%% of battery\n", int(dur), int((dur-int(dur))*60+0.5), drop
+      if(drop>0 && dur>0){ r=drop/dur; f=100/r
+        printf "  drain      %.1f%% per hour\n", r
+        printf "  projected  %dh %02dm from 100%% to 0%%\n", int(f), int((f-int(f))*60+0.5) }
+      aw=0; hg=0; ge=0; tsum=0; tmax=0
+      for(i=s;i<=e;i++){ if(S[i]=="Awake")aw++; if(H[i]=="1")hg++; if(G[i]=="1")ge++; tsum+=T[i]; if(T[i]>tmax)tmax=T[i]; fc[F[i]]++ }
+      m=e-s+1
+      printf "  screen on  %d%% of the time   head gaze on %d%%   hand gestures on %d%%\n", 100*aw/m, 100*hg/m, 100*ge/m
+      printf "  battery    %.0f C average, %d C peak\n", tsum/m, tmax
+      printf "  milestones"; for(k=90;k>=0;k-=10) for(i=s;i<=e;i++) if(L[i]<=k){ h=(U[i]-U[s])/3600; printf "  %d%%:%dh%02d", k, int(h), int((h-int(h))*60); break }; printf "\n"
+      printf "  foreground (minutes):"; for(a in fc) printf " %s=%d", a, fc[a]; printf "\n"
+    }' "$1"; }
+
 cmd_journals(){ ls -1 "$JOURNALS" 2>/dev/null | sed 's/^/  /' || true; }
 cmd_rollback(){ preflight
   case "${1:-}" in
@@ -428,6 +506,11 @@ Unofficial community tool, not affiliated with VITURE. No warranty: read DISCLAI
   ${B}Safety${N}
     backup [--no-media]        Settings, app list, user apks, shared storage
 
+  ${B}Measure${N}
+    battery-test start         Log battery every minute on the device, from 100% to shutdown
+    battery-test status|stop   Check or stop the logger
+    battery-test report        Runtime, drain per hour, milestones, conditions
+
   Flags: --dry-run (show, change nothing)  --yes (no prompts)  --force (skip model check)
 EOF
 }
@@ -440,6 +523,6 @@ c="${1:-help}"; shift || true
 case "$c" in
   pair) cmd_pair "$@";; connect) cmd_connect "$@";; status) cmd_status;; list) cmd_list "$@";;
   analyze) cmd_analyze;; reset-stats) cmd_reset_stats;; apply) cmd_apply "$@";; configure|config) cmd_configure "$@";; tvhome) cmd_tvhome "$@";;
-  journals) cmd_journals;; rollback) cmd_rollback "$@";; restore-stock) cmd_restore_stock;; backup) cmd_backup "$@";;
+  journals) cmd_journals;; rollback) cmd_rollback "$@";; restore-stock) cmd_restore_stock;; battery-test) cmd_battery_test "$@";; backup) cmd_backup "$@";;
   version|--version) echo "$VERSION";; help|-h|--help) usage;; *) usage; exit 1;;
 esac
