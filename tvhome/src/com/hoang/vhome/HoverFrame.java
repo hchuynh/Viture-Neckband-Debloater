@@ -10,10 +10,13 @@ final class HoverFrame extends FrameLayout {
     HoverFrame(Context c, Listener l) { super(c); this.l = l; }
 
     @Override public boolean dispatchHoverEvent(MotionEvent e) {
-        float x = e.getX(), y = e.getY();
-        boolean inside = x >= 0 && y >= 0 && x <= getWidth() && y <= getHeight();
-        if (e.getActionMasked() == MotionEvent.ACTION_HOVER_EXIT && !inside) l.onHover(false);
-        else if (inside) l.onHover(true);
+        // The window root only gets HOVER_EXIT when the pointer leaves the whole window. Android
+        // reports it with the last position, which is still inside, so never test the coordinates here.
+        switch (e.getActionMasked()) {
+            case MotionEvent.ACTION_HOVER_ENTER:
+            case MotionEvent.ACTION_HOVER_MOVE: l.onHover(true); break;
+            case MotionEvent.ACTION_HOVER_EXIT: l.onHover(false); break;
+        }
         return super.dispatchHoverEvent(e);
     }
 }

@@ -67,7 +67,8 @@ public class ControlService extends AccessibilityService {
         fab.setContentDescription("TV Home controls");
         fab.setOnClickListener(v -> {
             reveal();
-            if (panel == null && SystemClock.uptimeMillis() - closedByOutsideAt < 400) return;
+            // this click already closed the panel as an "outside" touch: just fade out as after any close
+            if (panel == null && SystemClock.uptimeMillis() - closedByOutsideAt < 400) { concealSoon(); return; }
             togglePanel();
         });
         fab.setAlpha(0f);   // invisible until the cursor moves onto its spot

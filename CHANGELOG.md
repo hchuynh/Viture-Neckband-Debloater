@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.4.0 (2026-10-29)
+
+- TV Home 1.4.2: the Menu key of an external controller (for example the CheerTouch touchpad) opens and closes the panel; configurable with `vnd_menu_key`, `0` disables it.
+- Wider gap between icons and labels in the panel (lost in 1.3.1).
+- Fix: the control button now fades out after the cursor leaves (Android reports the exit at the last position inside the button) and after closing the panel with the button itself.
+- README: screenshots of the status, list and configurator output, the hidden/revealed button, the panel and the Head gaze tile; screenshot policy for contributors.
+
 ## 1.3.0 (2026-10-29)
 
 - README: the helper app explained (its four parts, every permission it uses and how to revoke it, why it is signed and how to verify the certificate fingerprint); using Claude by pointing it at the repository URL, and where Claude must run to reach the neckband.
