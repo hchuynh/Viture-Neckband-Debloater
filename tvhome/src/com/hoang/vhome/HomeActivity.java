@@ -15,7 +15,12 @@ public class HomeActivity extends Activity {
         new ComponentName("com.android.launcher3", "com.android.searchlauncher.SearchLauncher");
     static long lastPress = 0;
 
-    @Override protected void onCreate(Bundle b) { super.onCreate(b); route(); finish(); }
+    @Override protected void onCreate(Bundle b) {
+        super.onCreate(b);
+        // Home starts first after boot: switch head gaze on right away, before the boot broadcast arrives.
+        if (SystemClock.elapsedRealtime() < 5 * 60 * 1000) BootReceiver.apply(this);
+        route(); finish();
+    }
     @Override protected void onNewIntent(Intent i) { super.onNewIntent(i); route(); finish(); }
 
     private void route() {
