@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.hoang.vhome" android:versionCode="2" android:versionName="1.0.1">
+    <uses-sdk android:minSdkVersion="29" android:targetSdkVersion="33"/>
+    <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS"/>
+    <uses-permission android:name="android.permission.WRITE_SECURE_SETTINGS"/>
+    <queries>
+        <package android:name="com.google.android.videos"/>
+        <package android:name="com.android.launcher3"/>
+    </queries>
+    <application android:label="TV Home" android:icon="@android:drawable/ic_menu_view" android:allowBackup="false">
+        <activity android:name=".HomeActivity" android:exported="true"
+            android:theme="@android:style/Theme.NoDisplay" android:launchMode="singleTask"
+            android:excludeFromRecents="true" android:stateNotNeeded="true" android:noHistory="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.HOME"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+            </intent-filter>
+        </activity>
+        <service android:name=".HeadGazeTile" android:exported="true" android:label="Head gaze"
+            android:icon="@android:drawable/ic_menu_view"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter><action android:name="android.service.quicksettings.action.QS_TILE"/></intent-filter>
+            <meta-data android:name="android.service.quicksettings.TOGGLEABLE_TILE" android:value="true"/>
+        </service>
+    </application>
+</manifest>

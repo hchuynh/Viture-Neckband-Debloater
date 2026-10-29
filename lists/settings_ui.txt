@@ -1,0 +1,6 @@
+# namespace|key|value|stock|what it does
+global|window_animation_scale|0.5|1.0|Window animations at half length
+global|transition_animation_scale|0.5|1.0|Transition animations at half length
+global|animator_duration_scale|0.5|-|Animator duration at half length
+system|peak_refresh_rate|60.0|120.0|Internal display capped at 60 Hz (the glasses run at 60 Hz)
+system|min_refresh_rate|60.0|48.0|Internal display fixed at 60 Hz

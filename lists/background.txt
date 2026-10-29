@@ -1,0 +1,9 @@
+# Apps blocked from running in the background (appop RUN_ANY_IN_BACKGROUND=ignore), only if installed.
+# Trade-off: their notifications arrive late or only when you open them.
+com.microsoft.teams
+com.microsoft.office.outlook
+com.netflix.mediaclient
+com.disney.disneyplus
+com.amazon.avod.thirdpartyclient
+com.crunchyroll.crunchyroid
+com.apple.atve.androidtv.appletv

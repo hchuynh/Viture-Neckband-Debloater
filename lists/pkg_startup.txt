@@ -1,0 +1,6 @@
+# package|risk|what it is
+com.google.android.apps.restore|safe|Restore-from-backup app, only used during first setup
+com.android.traceur|safe|System tracing developer tool
+com.android.dynsystem|safe|Dynamic System Updates (installs test Android images)
+com.google.android.ims|safe|Carrier calling and messaging (IMS), useless without a SIM
+com.qualcomm.qti.smq|safe|Qualcomm Snapdragon metrics and telemetry

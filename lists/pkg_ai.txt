@@ -1,0 +1,6 @@
+# package|risk|what it is
+com.viture.ai|moderate|Viture AI assistant
+com.viture.aiservice|moderate|Viture AI background service (observed restarting and using CPU while idle)
+com.google.android.as|safe|Android System Intelligence: Live Caption, smart text selection, app predictions
+com.google.android.as.oss|safe|Private Compute Services, companion of System Intelligence
+com.google.android.googlequicksearchbox|moderate|Google app: Assistant, Hey Google, Discover, launcher search bar (voice search stops working)

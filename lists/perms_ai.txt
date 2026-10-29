@@ -1,0 +1,3 @@
+# package|permission    revoked by the ai module, granted back on rollback
+com.google.android.googlequicksearchbox|android.permission.RECORD_AUDIO
+com.google.android.as|android.permission.RECORD_AUDIO
