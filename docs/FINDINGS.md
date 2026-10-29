@@ -35,11 +35,21 @@ Disney+ and YouTube, while actually playing video, used less CPU than the 3D hom
 
 **Before.** With the stock setup (3D home, hand gestures, AI services), the owner's real-world runtime was about 1 hour. Android's average across the first battery cycle (about 1.5 A) understated the worst case, because it mixed heavy stretches with lighter ones; with the camera, the 3D home and the AI service active together the draw is far higher.
 
-**After (interim, 29 October 2026).** With VND `recommended` and TV Home, a `battery-test` run from 100% dropped to 79% in 42 minutes: 29.8% per hour, which projects to 3 h 21 min from 100% to 0%, or 2 h 41 min if the device shuts down at 20%. The full run to shutdown is in progress.
+**After.** With VND `recommended` and TV Home, one `battery-test` run from 100% to automatic shutdown lasted **2 h 22 min** (29 October 2026):
 
-**What this says about the glasses.** At that rate the system draws roughly 4 W in total (29.8% per hour of a battery of about 13 Wh). Most of it is the glasses' displays and the XR composition, which no setting removes; brightness is the main lever left.
+| Phase | Minutes | Level | Voltage | Drain |
+|---|---|---|---|---|
+| Menus and settings | 0 to 58 | 100% to 72% | 4.10 to 3.69 V | 29.3% per hour |
+| YouTube live stream, steady | 58 to 112 | 72% to 41% | 3.68 to 3.49 V | 34.9% per hour |
+| YouTube live stream, end | 112 to 142 | 40% to 4% | 3.50 to 3.20 V | 74% per hour (reported) |
 
-**Android's on-screen estimate lags.** After large changes it still weights the old, heavier history. `reset-stats` and 30 to 60 minutes of use give a clean reading; the per-percent discharge steps in `dumpsys batterystats` and the `battery-test` log are the ground truth.
+![Battery level and voltage over the run](img/battery-test.png)
+
+**The end of the curve is the battery, not the software.** Load and conditions did not change in the last phase; the reported level dropped twice as fast because the voltage went below about 3.4 V under a load of roughly 1 A, and the fuel gauge corrected itself downwards. The device did not shut down at a fixed 20%: it ran to about 4% and switched off between 2 h 21 and 2 h 23 min. At the steady streaming rate, a healthy cell would have lasted roughly 2 h 50 min. Android's capacity estimate (3,474 mAh, above the rated 3,280 mAh) does not reflect this wear, so the voltage curve under load is the better indicator.
+
+**Power.** At 30 to 35% per hour of a battery of about 13 Wh, the system draws roughly 4 to 4.5 W. Most of it is the glasses' displays and the XR composition, which no setting removes; brightness is the main lever left. Head-gaze navigation measured at about 9% of total CPU load during streaming.
+
+**Android's on-screen estimate lags.** After large changes it still weights the old, heavier history. `reset-stats` and 30 to 60 minutes of use give a clean reading; the `battery-test` log is the ground truth.
 
 ## 4. Where the remaining power goes
 

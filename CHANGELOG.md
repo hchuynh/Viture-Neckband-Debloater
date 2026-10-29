@@ -2,7 +2,7 @@
 
 ## 1.4.0 (2026-10-29)
 
-- README and FINDINGS: interim battery results from the first `battery-test` run (stock about 1 h; tuned projected 3 h 21 min to 0%, 2 h 41 min to a 20% shutdown).
+- README and FINDINGS: final battery results of a full `battery-test` run (stock about 1 h; tuned 2 h 22 min from 100% to shutdown, 34.9% per hour while streaming), with a level and voltage chart showing the worn-cell collapse below 40%.
 - TV Home 1.4.2: the Menu key of an external controller (for example the CheerTouch touchpad) opens and closes the panel; configurable with `vnd_menu_key`, `0` disables it.
 - Wider gap between icons and labels in the panel (lost in 1.3.1).
 - Fix: the control button now fades out after the cursor leaves (Android reports the exit at the last position inside the button) and after closing the panel with the button itself.
