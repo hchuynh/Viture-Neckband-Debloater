@@ -30,7 +30,7 @@ Longer battery life, a quieter system and a microphone that only listens when yo
 
 ## 1. What VND is
 
-The VITURE Neckband is an Android 13 computer with a Snapdragon 888 processor and active cooling that drives VITURE XR glasses. Out of the box it also runs a hand-tracking camera, two AI assistants, a hotword listener, telemetry services from several vendors and a 3D home environment that keeps a full processor core busy while it is on screen.
+The VITURE Neckband is an Android 13 computer with a 6 nm Qualcomm 8-core processor (SM7325) and active cooling that drives VITURE XR glasses. Out of the box it also runs a hand-tracking camera, two AI assistants, a hotword listener, telemetry services from several vendors and a 3D home environment that keeps a full processor core busy while it is on screen.
 
 VND is a shell script that talks to the neckband over Android's standard wireless debugging (`adb`). It switches those extras off in small, documented modules, records every change in a rollback journal, and includes a 12 KB companion app that makes Google TV your home screen with a quick-settings button for head tracking.
 
@@ -568,7 +568,7 @@ No. It runs on your computer, talks only to your neckband and has no analytics.
 It depends on how you use the device. The largest savings come from switching hand gestures off and from not resting in the 3D home; [docs/FINDINGS.md](docs/FINDINGS.md) shows what was measured on one unit.
 
 **Why does a streaming stick seem more frugal?**
-A streaming stick runs on wall power, sends decoded video straight to HDMI and has no displays to feed. The neckband powers the glasses from its battery, composes every frame through the XR layer for a virtual screen, and runs phone Android on a flagship phone chip. Details in [docs/FINDINGS.md](docs/FINDINGS.md).
+A streaming stick runs on wall power, sends decoded video straight to HDMI and has no displays to feed. The neckband powers the glasses from its battery, composes every frame through the XR layer for a virtual screen, and runs full phone Android on a phone-class chip. Details in [docs/FINDINGS.md](docs/FINDINGS.md).
 
 **Does it work on other VITURE products?**
 VND targets the VITURE Neckband (model `V1231`). Other devices may use some of the same package names, but the model check refuses them unless you pass `--force`, and you would be testing on your own.

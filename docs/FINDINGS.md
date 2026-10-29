@@ -1,6 +1,6 @@
 # Findings
 
-Measurements taken on one VITURE Neckband (`V1231`, Android 13, build `TKQ1.240621.001`, Snapdragon 888 "lahaina", 8 GB RAM) paired with VITURE Beast glasses, on 28 and 29 October 2026. They describe that device on that firmware. Re-run `./vnd.sh analyze` on yours: your numbers will differ, and newer firmware may change the picture.
+Measurements taken on one VITURE Neckband (`V1231`, Android 13, build `TKQ1.240621.001`, Qualcomm SM7325, 8 GB RAM, 128 GB) paired with VITURE Beast glasses, on 28 and 29 October 2026. They describe that device on that firmware. Re-run `./vnd.sh analyze` on yours: your numbers will differ, and newer firmware may change the picture.
 
 ## Method
 
@@ -56,7 +56,7 @@ Disney+ and YouTube, while actually playing video, used less CPU than the 3D hom
 
 ## 6. Why a Chromecast seems more efficient
 
-A Chromecast draws wall power, its TV powers the panel, and decoded video goes from the decoder straight to HDMI without waking the CPU. The neckband powers the glasses from its battery, routes every frame through the XR compositor for a virtual screen with head-tracked reprojection, composes two displays, and runs full phone Android on a flagship phone chip whose idle floor is higher than a small TV chip's. Per watt delivered to the eyes it is reasonable; the waste was in the optional extras.
+A Chromecast draws wall power, its TV powers the panel, and decoded video goes from the decoder straight to HDMI without waking the CPU. The neckband powers the glasses from its battery, routes every frame through the XR compositor for a virtual screen with head-tracked reprojection, composes two displays, and runs full phone Android on a phone-class chip whose idle floor is higher than a small TV chip's. Per watt delivered to the eyes it is reasonable; the waste was in the optional extras.
 
 ## Things deliberately left alone
 
