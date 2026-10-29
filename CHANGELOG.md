@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.2.0 (2026-10-29)
+
+- TV Home 1.2.0: floating ☰ control button over every app, with Close app, Close all apps, Notifications, Quick settings, Volume down/up and Head gaze, for head-gaze navigation where Android expects swipes and drags.
+- `tvhome install` enables the control service alongside existing accessibility services (journaled); `tvhome uninstall` removes only it.
+- Build script: resources and lambda support.
+
 ## 1.1.0 (2026-10-29)
 
 - `battery-test start | status | stop | report`: on-device logger (one line per minute, survives disconnects) and a report with runtime from 100% to shutdown, drain per hour, 10% milestones and test conditions.

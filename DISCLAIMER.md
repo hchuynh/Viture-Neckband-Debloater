@@ -31,6 +31,8 @@ Wireless debugging gives a full command shell over your network to any computer 
 
 VND runs entirely on your computer and talks only to your neckband. It sends nothing to the authors or to any server, and contains no analytics.
 
+The TV Home floating controls run as an Android accessibility service. Accessibility services can, by design, read what is on screen. TV Home uses that ability only to find the Recents screen and its Clear all button when you press a Close button; it has no internet permission, keeps no logs and sends nothing. The source is in `tvhome/` for anyone to verify. If you prefer not to run an accessibility service, switch it off in Settings → Accessibility; everything else keeps working.
+
 The `state/` folder it creates holds your device's settings, app list, battery statistics and, if you run `backup`, copies of your apps and personal files. Treat it as private: it is excluded from git by `.gitignore`. Never attach it to a public issue or post.
 
 ## 6. Physical safety

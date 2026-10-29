@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.hoang.vhome" android:versionCode="3" android:versionName="1.1.0">
+    package="com.hoang.vhome" android:versionCode="4" android:versionName="1.2.0">
     <uses-sdk android:minSdkVersion="29" android:targetSdkVersion="33"/>
     <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS"/>
     <uses-permission android:name="android.permission.WRITE_SECURE_SETTINGS"/>
@@ -24,6 +24,11 @@
             android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
             <intent-filter><action android:name="android.service.quicksettings.action.QS_TILE"/></intent-filter>
             <meta-data android:name="android.service.quicksettings.TOGGLEABLE_TILE" android:value="true"/>
+        </service>
+        <service android:name=".ControlService" android:exported="true" android:label="@string/control_label"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
+            <intent-filter><action android:name="android.accessibilityservice.AccessibilityService"/></intent-filter>
+            <meta-data android:name="android.accessibilityservice" android:resource="@xml/control_service"/>
         </service>
         <receiver android:name=".BootReceiver" android:exported="true">
             <intent-filter>
