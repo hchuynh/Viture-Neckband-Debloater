@@ -1,7 +1,6 @@
 package com.hoang.vhome;
 import android.accessibilityservice.AccessibilityService;
 import android.accessibilityservice.GestureDescription;
-import android.graphics.Color;
 import android.graphics.Path;
 import android.graphics.PixelFormat;
 import android.graphics.drawable.GradientDrawable;
@@ -11,7 +10,6 @@ import android.os.Looper;
 import android.provider.Settings;
 import android.util.DisplayMetrics;
 import android.view.Gravity;
-import android.view.View;
 import android.view.WindowManager;
 import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityNodeInfo;
@@ -20,11 +18,16 @@ import android.widget.TextView;
 import java.util.List;
 
 /**
- * Floating control button for head-gaze navigation. Click it to open a panel with
- * Close app, Close all, Notifications, Quick settings, Volume -/+ and Head gaze.
- * Closing works the way a finger would: open Recents and swipe the card up.
+ * Control button for head-gaze navigation, placed in the taskbar row next to Back/Home/Recents.
+ * Click it to open a panel with Close app, Close all apps, Notifications, Quick settings,
+ * Volume down/up and Head gaze. Closing works the way a finger would: open Recents and swipe the card up.
  */
 public class ControlService extends AccessibilityService {
+    // Taskbar look on the VITURE Neckband (measured from the stock launcher): pill #263054
+    static final int PILL = 0xFF263054, PANEL = 0xF0151A2E, BUTTON = 0xFF263054, FG = 0xFFE8ECF8;
+    // In the taskbar row, just left of the Back/Home/Recents pill (dp, density 1.5 on this device)
+    static final int SIZE_DP = 55, RIGHT_DP = 199, BOTTOM_DP = 7;
+
     private final Handler h = new Handler(Looper.getMainLooper());
     private WindowManager wm;
     private TextView fab;
@@ -37,16 +40,18 @@ public class ControlService extends AccessibilityService {
     @Override protected void onServiceConnected() {
         wm = getSystemService(WindowManager.class);
         fab = new TextView(this);
-        fab.setText("☰");
-        fab.setTextSize(26);
-        fab.setTextColor(Color.WHITE);
-        fab.setGravity(Gravity.CENTER);
-        fab.setBackground(round(0xCC1F2937, 999));
-        fab.setAlpha(0.75f);
+        fab.setBackground(round(PILL, 999));
+        int pad = dp(14);
+        Icon menu = new Icon(Icon.MENU, FG, PILL);
+        menu.setBounds(0, 0, dp(SIZE_DP) - 2 * pad, dp(SIZE_DP) - 2 * pad);
+        fab.setCompoundDrawablesRelative(menu, null, null, null);
+        fab.setPadding(pad, pad, pad, pad);
+        fab.setContentDescription("TV Home controls");
         fab.setOnClickListener(v -> togglePanel());
-        WindowManager.LayoutParams lp = params(dp(64), dp(64));
-        lp.gravity = Gravity.END | Gravity.CENTER_VERTICAL;
-        lp.x = dp(12);
+        WindowManager.LayoutParams lp = params(dp(SIZE_DP), dp(SIZE_DP));
+        lp.gravity = Gravity.END | Gravity.BOTTOM;
+        lp.x = dp(RIGHT_DP);
+        lp.y = dp(BOTTOM_DP);
         wm.addView(fab, lp);
     }
 
@@ -56,11 +61,10 @@ public class ControlService extends AccessibilityService {
     }
 
     private WindowManager.LayoutParams params(int w, int hgt) {
-        WindowManager.LayoutParams lp = new WindowManager.LayoutParams(w, hgt,
+        return new WindowManager.LayoutParams(w, hgt,
             WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY,
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE | WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
             PixelFormat.TRANSLUCENT);
-        return lp;
     }
 
     private void togglePanel() { if (panel == null) showPanel(); else hidePanel(); }
@@ -69,18 +73,19 @@ public class ControlService extends AccessibilityService {
         panel = new LinearLayout(this);
         panel.setOrientation(LinearLayout.VERTICAL);
         panel.setPadding(dp(10), dp(10), dp(10), dp(10));
-        panel.setBackground(round(0xEE111827, dp(18)));
+        panel.setBackground(round(PANEL, dp(18)));
         boolean gaze = Settings.Global.getInt(getContentResolver(), HeadGazeTile.KEY, 0) == 1;
-        add("✕  Close app", this::closeApp);
-        add("✕✕  Close all apps", this::closeAll);
-        add("▾  Notifications", () -> performGlobalAction(GLOBAL_ACTION_NOTIFICATIONS));
-        add("⚙  Quick settings", () -> performGlobalAction(GLOBAL_ACTION_QUICK_SETTINGS));
-        add("−  Volume down", () -> volume(AudioManager.ADJUST_LOWER));
-        add("+  Volume up", () -> volume(AudioManager.ADJUST_RAISE));
-        add((gaze ? "◉  Head gaze: on" : "○  Head gaze: off"), this::toggleGaze);
+        add(Icon.CLOSE, "Close app", this::closeApp);
+        add(Icon.CLOSE_ALL, "Close all apps", this::closeAll);
+        add(Icon.NOTIFICATIONS, "Notifications", () -> performGlobalAction(GLOBAL_ACTION_NOTIFICATIONS));
+        add(Icon.QUICK_SETTINGS, "Quick settings", () -> performGlobalAction(GLOBAL_ACTION_QUICK_SETTINGS));
+        add(Icon.VOLUME_DOWN, "Volume down", () -> volume(AudioManager.ADJUST_LOWER));
+        add(Icon.VOLUME_UP, "Volume up", () -> volume(AudioManager.ADJUST_RAISE));
+        add(gaze ? Icon.GAZE_ON : Icon.GAZE_OFF, gaze ? "Head gaze: on" : "Head gaze: off", this::toggleGaze);
         WindowManager.LayoutParams lp = params(WindowManager.LayoutParams.WRAP_CONTENT, WindowManager.LayoutParams.WRAP_CONTENT);
-        lp.gravity = Gravity.END | Gravity.CENTER_VERTICAL;
-        lp.x = dp(88);
+        lp.gravity = Gravity.END | Gravity.BOTTOM;   // opens upward from the button, above the taskbar
+        lp.x = dp(RIGHT_DP - 120);
+        lp.y = dp(BOTTOM_DP + SIZE_DP + 10);
         wm.addView(panel, lp);
         h.removeCallbacks(autoHide);
         h.postDelayed(autoHide, 8000);
@@ -91,13 +96,18 @@ public class ControlService extends AccessibilityService {
         if (panel != null) { try { wm.removeView(panel); } catch (Exception ignored) { } panel = null; }
     }
 
-    private void add(String label, Runnable action) {
+    private void add(int icon, String label, Runnable action) {
         TextView b = new TextView(this);
         b.setText(label);
         b.setTextSize(20);
-        b.setTextColor(Color.WHITE);
-        b.setPadding(dp(22), dp(14), dp(28), dp(14));
-        b.setBackground(round(0xFF1F2937, dp(12)));
+        b.setTextColor(FG);
+        b.setGravity(Gravity.CENTER_VERTICAL);
+        Icon d = new Icon(icon, FG, BUTTON);
+        d.setBounds(0, 0, dp(26), dp(26));
+        b.setCompoundDrawablesRelative(d, null, null, null);
+        b.setCompoundDrawablePadding(dp(16));
+        b.setPadding(dp(20), dp(14), dp(28), dp(14));
+        b.setBackground(round(BUTTON, dp(12)));
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(dp(300), LinearLayout.LayoutParams.WRAP_CONTENT);
         lp.setMargins(0, dp(4), 0, dp(4));
         b.setOnClickListener(v -> { hidePanel(); h.postDelayed(action, 150); });
@@ -137,7 +147,7 @@ public class ControlService extends AccessibilityService {
                 }
             }
             boolean inRecents = root.getPackageName() != null && "com.android.launcher3".contentEquals(root.getPackageName());
-            if (!inRecents) return;   // recents closed itself: nothing left
+            if (!inRecents) return;   // Recents closed itself: nothing left
         }
         if (n >= 20) { performGlobalAction(GLOBAL_ACTION_HOME); return; }
         swipeUp(() -> h.postDelayed(() -> clearStep(n + 1), 450));

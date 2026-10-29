@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.2.1 (2026-10-29)
+
+- TV Home 1.2.1: the control button sits in the taskbar row next to Back/Home/Recents, matching its color; the panel opens upward above it.
+- Original line icons for every control (close, close all as stacked windows, bell, toggles, speaker, eye) replace text symbols.
+
 ## 1.2.0 (2026-10-29)
 
 - TV Home 1.2.0: floating ☰ control button over every app, with Close app, Close all apps, Notifications, Quick settings, Volume down/up and Head gaze, for head-gaze navigation where Android expects swipes and drags.
