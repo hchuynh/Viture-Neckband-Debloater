@@ -19,6 +19,8 @@ import java.util.List;
 
 /**
  * Control button for head-gaze navigation, placed in the taskbar row next to Back/Home/Recents.
+ * It is invisible until the cursor hovers over its spot (or the spot is clicked), and fades out
+ * 1.5 s after the cursor leaves, so it never covers full-screen apps.
  * Click it to open a panel with Close app, Close all apps, Notifications, Quick settings,
  * Volume down/up and Head gaze. Closing works the way a finger would: open Recents and swipe the card up.
  */
@@ -31,8 +33,9 @@ public class ControlService extends AccessibilityService {
     private final Handler h = new Handler(Looper.getMainLooper());
     private WindowManager wm;
     private TextView fab;
-    private LinearLayout panel;
+    private HoverFrame fabFrame, panel;
     private final Runnable autoHide = this::hidePanel;
+    private final Runnable fadeOut = () -> { if (panel == null && fab != null) fab.animate().alpha(0f).setDuration(350).start(); };
 
     @Override public void onAccessibilityEvent(AccessibilityEvent e) { }
     @Override public void onInterrupt() { }
@@ -47,16 +50,30 @@ public class ControlService extends AccessibilityService {
         fab.setCompoundDrawablesRelative(menu, null, null, null);
         fab.setPadding(pad, pad, pad, pad);
         fab.setContentDescription("TV Home controls");
-        fab.setOnClickListener(v -> togglePanel());
+        fab.setOnClickListener(v -> { reveal(); togglePanel(); });
+        fab.setAlpha(0f);   // invisible until the cursor moves onto its spot
+        fabFrame = new HoverFrame(this, inside -> { if (inside) reveal(); else concealSoon(); });
+        fabFrame.addView(fab, new HoverFrame.LayoutParams(dp(SIZE_DP), dp(SIZE_DP)));
         WindowManager.LayoutParams lp = params(dp(SIZE_DP), dp(SIZE_DP));
         lp.gravity = Gravity.END | Gravity.BOTTOM;
         lp.x = dp(RIGHT_DP);
         lp.y = dp(BOTTOM_DP);
-        wm.addView(fab, lp);
+        wm.addView(fabFrame, lp);
+    }
+
+    private void reveal() {
+        h.removeCallbacks(fadeOut);
+        fab.animate().cancel();
+        fab.animate().alpha(1f).setDuration(120).start();
+    }
+
+    private void concealSoon() {
+        h.removeCallbacks(fadeOut);
+        h.postDelayed(fadeOut, 1500);
     }
 
     @Override public void onDestroy() {
-        try { if (panel != null) wm.removeView(panel); if (fab != null) wm.removeView(fab); } catch (Exception ignored) { }
+        try { if (panel != null) wm.removeView(panel); if (fabFrame != null) wm.removeView(fabFrame); } catch (Exception ignored) { }
         super.onDestroy();
     }
 
@@ -69,11 +86,19 @@ public class ControlService extends AccessibilityService {
 
     private void togglePanel() { if (panel == null) showPanel(); else hidePanel(); }
 
+    private LinearLayout list;
+
     private void showPanel() {
-        panel = new LinearLayout(this);
-        panel.setOrientation(LinearLayout.VERTICAL);
-        panel.setPadding(dp(10), dp(10), dp(10), dp(10));
-        panel.setBackground(round(PANEL, dp(18)));
+        // keep the panel while the cursor is on it; close it 2 s after the cursor leaves (8 s if it never arrives)
+        panel = new HoverFrame(this, inside -> {
+            h.removeCallbacks(autoHide);
+            if (inside) reveal(); else h.postDelayed(autoHide, 2000);
+        });
+        list = new LinearLayout(this);
+        list.setOrientation(LinearLayout.VERTICAL);
+        list.setPadding(dp(10), dp(10), dp(10), dp(10));
+        list.setBackground(round(PANEL, dp(18)));
+        panel.addView(list);
         boolean gaze = Settings.Global.getInt(getContentResolver(), HeadGazeTile.KEY, 0) == 1;
         add(Icon.CLOSE, "Close app", this::closeApp);
         add(Icon.CLOSE_ALL, "Close all apps", this::closeAll);
@@ -94,6 +119,7 @@ public class ControlService extends AccessibilityService {
     private void hidePanel() {
         h.removeCallbacks(autoHide);
         if (panel != null) { try { wm.removeView(panel); } catch (Exception ignored) { } panel = null; }
+        concealSoon();
     }
 
     private void add(int icon, String label, Runnable action) {
@@ -111,7 +137,7 @@ public class ControlService extends AccessibilityService {
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(dp(300), LinearLayout.LayoutParams.WRAP_CONTENT);
         lp.setMargins(0, dp(4), 0, dp(4));
         b.setOnClickListener(v -> { hidePanel(); h.postDelayed(action, 150); });
-        panel.addView(b, lp);
+        list.addView(b, lp);
     }
 
     // --- actions ---
