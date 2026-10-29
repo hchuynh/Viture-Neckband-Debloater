@@ -298,7 +298,7 @@ T bloat        com.meig.logger                    # [safe] Diagnostic logger fro
 | Part | What it does | Why it is needed |
 |---|---|---|
 | **Home toggle** | Home opens Google TV; Home again opens the stock app list | Android only lets a real home app decide what Home opens |
-| **Head gaze at startup** | Switches Headgaze Navigation on at every boot | Viture's firmware switches it off at each restart |
+| **Head gaze and gestures at startup** | Switches Headgaze Navigation on, and hand gestures off if you chose so, at every boot | Viture's firmware resets both at each restart |
 | **Head gaze button** | A quick-settings button to switch head tracking on and off | Viture disables volume keys while head gaze is on |
 | **Floating controls** | A hidden ☰ button in the taskbar, also opened by a controller's Menu key, with Close app, Close all, Notifications, Quick settings, Volume and Head gaze | The plain interface relies on swipes and drags a head-gaze cursor cannot perform |
 
@@ -340,7 +340,7 @@ The plain Android interface has no pointer for the neckband buttons, which is wh
 | Press Home from any app or from the app list | Google TV opens |
 | Press Home while Google TV is in front | The stock app list opens |
 | Press Back out of Google TV | The stock app list opens |
-| Restart the neckband | It starts in Google TV, with head gaze switched on |
+| Restart the neckband | It starts in Google TV, with head gaze on (and gestures off if you chose so) |
 | Single press on the neckband Settings key | Viture's 3D home, unchanged |
 | Long press on the Settings key | Recenter, unchanged |
 
@@ -380,9 +380,11 @@ The controls run as an Android **accessibility service** called *TV Home control
 
 Closing apps is about tidiness, not battery: Android's app freezer already freezes apps left in the background after about 10 minutes, so they stop using power.
 
-### Head gaze at every startup
+### Head gaze on and gestures off at every startup
 
-Viture's firmware switches Headgaze Navigation off at every boot. TV Home switches it back on as soon as the device starts, then checks again after 20 seconds, 1 minute and 3 minutes, while Viture's XR layer finishes starting. You can still switch it off during a session with the button below; the next restart turns it on again.
+Viture's firmware switches Headgaze Navigation off, and hand gestures back on, at every boot. TV Home switches it back on as soon as the device starts, then checks again after 20 seconds, 1 minute and 3 minutes, while Viture's XR layer finishes starting. You can still switch it off during a session with the button below; the next restart turns it on again.
+
+Hand gestures are handled the same way, but only if you chose them off: `apply gestures` sets the flag `vnd_gestures_off`, and while it is set TV Home switches gestures off again after each boot, which keeps the tracking camera from draining the battery. Rolling back the `gestures` journal or running `restore-stock` removes the flag, and TV Home then leaves gestures alone. A double press on the Settings key still toggles gestures during a session.
 
 ### The Head gaze button
 
@@ -539,7 +541,7 @@ Environment
 | adb crashes with `fdsan` or `daemon didn't ACK` | Some adb builds crash on mDNS inside virtual machines. Prefix commands with `VND_NO_MDNS=1`. |
 | `this is '…', not a VITURE Neckband` | VND only supports model `V1231`. `--force` overrides it at your own risk. |
 | Volume keys do nothing | Head gaze is on (Viture behavior). Use the floating ☰ button → Volume, or switch head gaze off. |
-| Hand gestures came back | A double press on the Settings key toggles them. Double press again or `apply gestures`. |
+| Hand gestures came back | A double press on the Settings key toggles them: double press again. After a reboot they are switched off automatically once `apply gestures` has run with TV Home installed. |
 | No cursor in the plain interface | Head gaze is off. Use the floating ☰ button → Head gaze, or `apply gestures`. |
 | The ☰ button is missing | It is invisible until the cursor hovers over its spot, just left of Back/Home/Recents. If it never appears, the accessibility service is off: Settings → Accessibility → TV Home controls, or run `tvhome install` again. |
 | Close app did nothing | Recents took longer than usual to open. Press it again; on a slow first launch after boot this can happen once. |

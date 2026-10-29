@@ -8,16 +8,24 @@ import android.os.SystemClock;
 import android.provider.Settings;
 
 /**
- * Keeps Headgaze Navigation on after every boot. Viture's firmware resets it at startup,
- * so it is applied at boot and re-applied after 20 s, 60 s and 180 s while the XR layer starts.
+ * Keeps Headgaze Navigation on after every boot, and hand gestures off when the owner chose so.
+ * Viture's firmware resets both at startup, so they are applied at boot and re-applied after
+ * 20 s, 60 s and 180 s while the XR layer starts. Gestures are touched only while the global
+ * flag vnd_gestures_off = 1 (set by `vnd.sh apply gestures`, removed by its rollback).
  */
 public class BootReceiver extends BroadcastReceiver {
     static final String ACTION_APPLY = "com.hoang.vhome.APPLY_HEAD_GAZE";
     static final long[] DELAYS = {20_000, 60_000, 180_000};
 
+    static final String GESTURES = "eden_gesture_mode", GESTURES_OFF_FLAG = "vnd_gestures_off";
+
     static void apply(Context c) {
-        try { Settings.Global.putInt(c.getContentResolver(), HeadGazeTile.KEY, 1); }
-        catch (SecurityException ignored) { /* WRITE_SECURE_SETTINGS not granted */ }
+        try {
+            Settings.Global.putInt(c.getContentResolver(), HeadGazeTile.KEY, 1);
+            if (Settings.Global.getInt(c.getContentResolver(), GESTURES_OFF_FLAG, 0) == 1
+                    && Settings.Global.getInt(c.getContentResolver(), GESTURES, 0) != 0)
+                Settings.Global.putInt(c.getContentResolver(), GESTURES, 0);
+        } catch (SecurityException ignored) { /* WRITE_SECURE_SETTINGS not granted */ }
     }
 
     @Override public void onReceive(Context c, Intent i) {

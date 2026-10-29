@@ -1,3 +1,4 @@
 # namespace|key|value|stock|what it does
 global|eden_gesture_mode|0|1|Hand gestures off: stops the tracking camera (largest single drain measured)
 global|viture_settings_enable_head_gaze|1|0|Headgaze Navigation on: cursor driven by motion sensors, works outside the 3D home
+global|vnd_gestures_off|1|-|Keep hand gestures off after every boot (TV Home re-applies it; Viture resets it at startup)
