@@ -42,15 +42,18 @@ Every item in VND comes from measurement: two days of Android battery statistics
 
 ### Battery results
 
-Measured on one refurbished unit (model `V1231`, Android 13, build `TKQ1.240621.001`) with VITURE Beast glasses, using `./vnd.sh battery-test`. **Interim result, 29 October 2026:** the full 100%-to-shutdown run is still in progress, and this table will be replaced by the final figures.
+Measured on one refurbished unit (model `V1231`, Android 13, build `TKQ1.240621.001`) with VITURE Beast glasses, using `./vnd.sh battery-test`, on 29 October 2026: one full run from 100% to automatic shutdown.
 
-| Setup | Runtime |
+| Setup | Result |
 |---|---|
 | Stock: 3D home, hand gestures, AI services (owner's real-world experience) | about **1 hour** |
-| VND `recommended` + TV Home, projected from 100% to 0% | **3 h 21 min** |
-| VND `recommended` + TV Home, projected to shutdown if it happens at 20% | **2 h 41 min** |
+| VND `recommended` + TV Home, full run from 100% to shutdown | **2 h 22 min** |
+| of which: menus and settings, first 58 min | 29.3% per hour |
+| of which: continuous YouTube live stream, steady phase | 34.9% per hour |
 
-Conditions of the interim run: 42 minutes from 100% to 79%, a drain of 29.8% per hour, screen always on, head gaze on, hand gestures off, battery at 27 °C on average, mostly Google TV and settings screens in the foreground. Continuous video streaming may raise the drain somewhat. Your unit, firmware and brightness will give different numbers; measure your own with `battery-test`.
+<p align="center"><img src="docs/img/battery-test.png" alt="Battery level and voltage over the 2 h 22 min test" width="760"></p>
+
+**What the curve shows.** For almost two hours the battery drained at a steady pace. Below about 40% the voltage fell under 3.4 V and the reported level collapsed: the last 40% lasted 29 minutes. That pattern points to a worn cell on this refurbished unit; at the steady streaming rate a healthy battery would have reached roughly 2 h 50 min. Conditions: screen always on, head gaze on, hand gestures off, battery at 26 to 29 °C, moderate glasses brightness. Your unit, firmware and brightness will give different numbers; measure your own with `battery-test`.
 
 ## 2. What it changes
 
