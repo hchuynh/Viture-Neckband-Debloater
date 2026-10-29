@@ -11,6 +11,7 @@ import android.os.SystemClock;
 import android.provider.Settings;
 import android.util.DisplayMetrics;
 import android.view.Gravity;
+import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.WindowManager;
 import android.view.accessibility.AccessibilityEvent;
@@ -39,6 +40,17 @@ public class ControlService extends AccessibilityService {
     private HoverFrame fabFrame, panel;
     private long closedByOutsideAt = 0;   // so a click on the button that closes the panel does not reopen it
     private final Runnable fadeOut = () -> { if (panel == null && fab != null) fab.animate().alpha(0f).setDuration(350).start(); };
+
+    // Key that opens the panel from an external controller (default: Menu, e.g. CheerTouch).
+    // Change it with: adb shell settings put global vnd_menu_key <keycode>   (0 = off)
+    static final String MENU_KEY = "vnd_menu_key";
+
+    @Override protected boolean onKeyEvent(KeyEvent e) {
+        int key = Settings.Global.getInt(getContentResolver(), MENU_KEY, KeyEvent.KEYCODE_MENU);
+        if (key <= 0 || e.getKeyCode() != key) return false;
+        if (e.getAction() == KeyEvent.ACTION_UP && e.getRepeatCount() == 0) { reveal(); togglePanel(); }
+        return true;   // consume both down and up so the app underneath does not also react
+    }
 
     @Override public void onAccessibilityEvent(AccessibilityEvent e) { }
     @Override public void onInterrupt() { }
@@ -146,8 +158,9 @@ public class ControlService extends AccessibilityService {
     private void setLabel(TextView b, int icon, String label) {
         b.setText(label);
         Icon d = new Icon(icon, FG, BUTTON);
-        d.setBounds(0, 0, dp(26), dp(26));
+        d.setBounds(0, 0, dp(28), dp(28));
         b.setCompoundDrawablesRelative(d, null, null, null);
+        b.setCompoundDrawablePadding(dp(24));   // gap between icon and label
     }
 
     private TextView add(int icon, String label, boolean closes, Action action) {
@@ -156,7 +169,7 @@ public class ControlService extends AccessibilityService {
         b.setTextSize(20);
         b.setTextColor(FG);
         b.setGravity(Gravity.CENTER_VERTICAL);
-        b.setPadding(dp(20), dp(14), dp(28), dp(14));
+        b.setPadding(dp(24), dp(14), dp(28), dp(14));
         b.setBackground(round(BUTTON, dp(12)));
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(dp(300), LinearLayout.LayoutParams.WRAP_CONTENT);
         lp.setMargins(0, dp(4), 0, dp(4));
