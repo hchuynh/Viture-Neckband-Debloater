@@ -4,6 +4,8 @@
 
 Longer battery life, a quieter system and a microphone that only listens when you ask, for the VITURE Neckband. No root, no uninstalls, no flashing, and every change has an undo.
 
+<p align="center"><img src="docs/img/terminal-status.png" alt="vnd.sh status showing every module applied" width="760"></p>
+
 ---
 
 ## Contents
@@ -61,6 +63,8 @@ To see every single setting with its stock value, and every app with its risk ra
 ./vnd.sh list            # everything
 ./vnd.sh list ai         # one module
 ```
+
+<p align="center"><img src="docs/img/terminal-list.png" alt="vnd.sh list gestures" width="760"></p>
 
 ---
 
@@ -236,15 +240,7 @@ Modules are the fast path. The configurator is the precise one: every service an
 ./vnd.sh configure
 ```
 
-```
-  #   now      risk        item                                         what it does
-
-  bloat  Telemetry, feedback, screensavers, print, Meet, Messages, Wellbeing
-  13   tuned   safe        com.meig.logger                              Diagnostic logger from the modem vendor (MeiG)
-  14  *stock   safe        com.eden.report                              Eden (Viture platform) usage reporting
-
-  1 pending change(s), marked *
-```
+<p align="center"><img src="docs/img/terminal-configure.png" alt="The interactive configurator" width="760"></p>
 
 | You type | Effect |
 |---|---|
@@ -289,7 +285,7 @@ T bloat        com.meig.logger                    # [safe] Diagnostic logger fro
 | **Home toggle** | Home opens Google TV; Home again opens the stock app list | Android only lets a real home app decide what Home opens |
 | **Head gaze at startup** | Switches Headgaze Navigation on at every boot | Viture's firmware switches it off at each restart |
 | **Head gaze button** | A quick-settings button to switch head tracking on and off | Viture disables volume keys while head gaze is on |
-| **Floating controls** | A hidden ☰ button in the taskbar with Close app, Close all, Notifications, Quick settings, Volume and Head gaze | The plain interface relies on swipes and drags a head-gaze cursor cannot perform |
+| **Floating controls** | A hidden ☰ button in the taskbar, also opened by a controller's Menu key, with Close app, Close all, Notifications, Quick settings, Volume and Head gaze | The plain interface relies on swipes and drags a head-gaze cursor cannot perform |
 
 It has no screen of its own, no background activity beyond the startup check, **no internet permission**, no analytics, and it stores nothing.
 
@@ -303,7 +299,7 @@ It has no screen of its own, no background activity beyond the startup check, **
 | **Usage access** | Knowing which app was last in front, so Home can toggle between Google TV and the app list | Settings → Apps → Special app access → Usage access |
 | **Write secure settings** (`WRITE_SECURE_SETTINGS`, grantable only over adb) | Switching Viture's head-gaze setting from the button, the panel and at boot | `adb shell pm revoke com.hoang.vhome android.permission.WRITE_SECURE_SETTINGS` |
 | **Run at startup** (`RECEIVE_BOOT_COMPLETED`) | The head-gaze check after each boot | Uninstall the app |
-| **Accessibility service** "TV Home controls" | Drawing the controls over full-screen apps, performing the Recents swipe to close apps, opening notifications and quick settings | Settings → Accessibility → TV Home controls |
+| **Accessibility service** "TV Home controls" | Drawing the controls over full-screen apps, performing the Recents swipe to close apps, opening notifications and quick settings, listening for the controller's Menu key | Settings → Accessibility → TV Home controls |
 | **Quick-settings tile** | The Head gaze button in the pull-down panel | Edit the quick-settings panel |
 
 `./vnd.sh tvhome uninstall` removes the app and all of the above in one step, and the `tvhome` rollback journal restores the previous home app and accessibility settings.
@@ -341,6 +337,10 @@ The plain Android interface relies on gestures a head-gaze cursor cannot perform
 
 TV Home adds a **☰ button** in the taskbar row, just left of Back, Home and Recents, in the same shape and color. It is **invisible until you move the cursor onto its spot**, then fades in; it fades out again about 1.5 seconds after the cursor leaves. It works the same over full-screen apps that hide the taskbar, without covering them. Click it to open a panel above it:
 
+<p align="center"><img src="docs/img/button-hover.png" alt="The control button is invisible at rest and appears when the cursor reaches its spot next to Back, Home and Recents" width="640"></p>
+<p align="center"><img src="docs/img/panel.png" alt="The control panel" width="300"></p>
+
+
 | Button | What it does |
 |---|---|
 | **Close app** | Closes the app you are using (opens Recents, swipes its card up, returns Home) |
@@ -351,6 +351,13 @@ TV Home adds a **☰ button** in the taskbar row, just left of Back, Home and Re
 | **Head gaze** | Switches head tracking on or off |
 
 The panel stays open until you **click outside it** or **click the ☰ button again**. Volume and Head gaze keep it open, so you can press Volume up several times in a row; Close app, Close all, Notifications and Quick settings close it because they take you somewhere else. A click outside the panel also reaches whatever is underneath, as with any Android overlay, so click an empty area to close it.
+
+**From an external controller.** The **Menu** key opens and closes the panel too. Touchpad remotes such as the CheerTouch have a dedicated Menu button, which modern Android apps ignore, so nothing is lost by giving it this job. The key is consumed and does not also reach the app underneath. To use a different key, or switch this off:
+
+```bash
+adb shell settings put global vnd_menu_key 82    # 82 = Menu (default); any Android key code works
+adb shell settings put global vnd_menu_key 0     # off
+```
 
 The invisible spot still answers clicks, so it works even if a cursor never sends hover events. It is the size of one taskbar button; the rest of the screen is unaffected. The icons are original line drawings made in code, so the app bundles no third-party icon set.
 
@@ -363,6 +370,8 @@ Closing apps is about tidiness, not battery: Android's app freezer already freez
 Viture's firmware switches Headgaze Navigation off at every boot. TV Home switches it back on as soon as the device starts, then checks again after 20 seconds, 1 minute and 3 minutes, while Viture's XR layer finishes starting. You can still switch it off during a session with the button below; the next restart turns it on again.
 
 ### The Head gaze button
+
+<img src="docs/img/headgaze-tile.png" alt="The Head gaze quick-settings tile" width="200" align="right">
 
 `tvhome install` adds a **Head gaze** button to the pull-down quick settings panel. Tap it to switch head tracking on or off. Viture disables volume keys while head gaze is on, so this is also the quick way to change volume: switch it off, adjust, switch it on.
 
@@ -565,6 +574,7 @@ Contributions are welcome, especially measurements from other firmware versions.
 - **Never move items out of** `lists/never_touch.txt` without a test on a real device and a rollback plan in the pull request.
 - **Do not commit** device snapshots, backups, signing keys or anything from `state/`.
 - **Do not add** VITURE firmware files, extracted APKs, logos, screenshots of copyrighted UI or text copied from VITURE documentation. Link to public sources and paraphrase.
+- **Screenshots** in `docs/img/` show only VND and TV Home over neutral Android screens. Any screenshot with third-party content (posters, artwork, other brands' icons) or personal data (account names, network names, profile pictures) must be blurred before it is committed.
 - Keep `vnd.sh` compatible with bash 3.2 (macOS default) and run `shellcheck` before submitting.
 
 ---
