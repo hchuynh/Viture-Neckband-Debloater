@@ -293,7 +293,7 @@ T bloat        com.meig.logger                    # [safe] Diagnostic logger fro
 
 ### The helper app in one minute
 
-**TV Home** (`com.hoang.vhome`, about 20 KB) is a small companion app that ships with VND in [tvhome/](tvhome/), source code included. VND's script changes settings; TV Home adds the few things a settings change cannot do. It has five parts:
+**TV Home** (`com.hoang.vhome`, about 20 KB) is a small companion app that ships with VND in [tvhome/](tvhome/), source code included. VND's script changes settings; TV Home adds the few things a settings change cannot do. It has six parts:
 
 | Part | What it does | Why it is needed |
 |---|---|---|
@@ -301,7 +301,8 @@ T bloat        com.meig.logger                    # [safe] Diagnostic logger fro
 | **Head gaze and gestures at startup** | Switches Headgaze Navigation on, and hand gestures off if you chose so, at every boot | Viture's firmware resets both at each restart |
 | **Head gaze button** | A quick-settings button to switch head tracking on and off | Viture disables volume keys while head gaze is on |
 | **Floating controls** | A hidden ☰ button in the taskbar, also opened by a controller's Menu key, with Close app, Close all, Notifications, Volume, Head gaze and Settings | The plain interface relies on swipes and drags a head-gaze cursor cannot perform |
-| **Settings popup** | Startup choices, Wireless debugging with its address, button remapping, About | Changing these otherwise needs a computer and adb |
+| **Edge controls** | A scrollbar on the right edge, and a media bar while something plays | Head gaze can click but cannot drag, so long lists and pages are hard to scroll |
+| **Settings popup** | Startup choices, Wireless debugging with its address, edge controls, sleep timer, button remapping, About | Changing these otherwise needs a computer and adb |
 
 It has no app screen of its own (everything lives in the panel), no background activity beyond the startup check, **no internet permission**, no analytics, and it stores nothing.
 
@@ -377,13 +378,16 @@ The panel stays open until you **click outside it**, **click the ☰ button agai
 
 | Setting | What it does |
 |---|---|
-| **At startup: Head gaze on** | On by default. Switch it off if you prefer to start without head tracking |
-| **At startup: Hand gestures off** | The same flag `apply gestures` sets; keeps the gesture camera off after each boot |
+| **At startup: Head gaze** | On by default. Switch it off if you prefer to start without head tracking |
+| **At startup: Hand gestures** | On is Viture's default. Off switches the gesture camera off at once and keeps it off after every restart, the biggest single battery saving (the same flag `apply gestures` sets) |
 | **At startup: Wireless debugging at next startup** | Turns Wireless debugging on once, at the next restart, then switches itself off. As soon as the connection is ready, a popup shows the address and port to use with `./vnd.sh connect`. Useful because the port changes at every restart |
-| **Wireless debugging** | Switches it on or off now, and lists the neckband's addresses (Wi-Fi and VPN, such as Tailscale) with the port |
-| **Show port** | Android does not let apps read the debugging port, so TV Home opens the system Wireless debugging page for a moment, reads its "IP address & Port" line and comes back. It also picks the port up whenever you open that page yourself |
+| **Wireless debugging** | Switches it on or off now, and lists the neckband's addresses (Wi-Fi and VPN, such as Tailscale) with the port. Android does not let apps read the port, so TV Home briefly opens the system Wireless debugging page behind the popup, reads its "IP address & Port" line and steps back. It also picks the port up whenever you open that page yourself |
+| **Edge controls** | On by default; see below |
+| **Sleep timer** | Off by default. Each click steps through 15, 30, 60 and 90 minutes and back to Off. When time is up, playback pauses and the screen locks, so the glasses go dark. While it runs, the ☰ panel shows the time left with a one-click cancel. It does not survive a restart |
 | **Buttons** | Remap buttons (below) |
 | **About** | Version, licence, and a link to this repository |
+
+Back closes the popup, or returns to the previous page inside it. The panel and the popup also close when the app behind them changes screen, so they never stay on top of something else.
 
 Leave Wireless debugging off when you are not using a computer: anyone you paired can reach the neckband while it is on.
 
@@ -393,6 +397,18 @@ Leave Wireless debugging off when you are not using a computer: anyone you paire
 - The power button and the neckband mode button are handled by the system before any app sees them, so they cannot be remapped.
 
 <p align="center"><img src="docs/img/buttons.png" alt="Button remapping" width="420"></p>
+
+### Edge controls
+
+Head gaze can point and click but not drag, which makes long lists, web pages and settings hard to scroll. Push the cursor against the **right edge** of the screen and a thin **scrollbar** appears, set slightly in from the edge:
+
+- **Click** the top or bottom half to scroll one page up or down.
+- **Double-click** a half to jump to the top or the bottom.
+- **Press and drag** along it to scroll continuously; the further you drag, the faster it goes.
+
+While something is **playing**, a **media bar** also appears in the middle of the screen: previous, back 10 seconds, play/pause, forward 10 seconds, next. When nothing plays it stays hidden. Skip lengths follow each app (most use 10 seconds).
+
+Both stay open while you use them, and close on a click anywhere else or about 3 seconds after the cursor leaves them. A cursor that only sweeps past the edge does not open them: it has to rest there for a moment. Switch the feature off in Settings if you never want it. Neckband buttons cannot open them, because Viture keeps the volume buttons for itself while head gaze is on.
 
 The invisible spot still answers clicks, so it works even if a cursor never sends hover events. It is the size of one taskbar button; the rest of the screen is unaffected. The icons are original line drawings made in code, so the app bundles no third-party icon set.
 

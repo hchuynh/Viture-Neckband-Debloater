@@ -107,14 +107,28 @@ public class ControlService extends AccessibilityService {
     }
 
     @Override public void onAccessibilityEvent(AccessibilityEvent e) {
+        CharSequence pkg = e.getPackageName();
         // learn the debugging port whenever the system Wireless debugging page is on screen
-        if (e.getPackageName() != null && "com.android.settings".contentEquals(e.getPackageName()) && Net.adbWifiOn(this))
+        if (pkg != null && "com.android.settings".contentEquals(pkg) && Net.adbWifiOn(this))
             h.postDelayed(this::scanPort, 400);
+        // The neckband's Back may reach the app behind instead of the panel or popup. When the app
+        // behind changes screen, close them too, so they never stay on top of something else.
+        if (pkg == null || getPackageName().contentEquals(pkg) || e.getEventType() != AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) return;
+        CharSequence cls = e.getClassName();
+        if (cls == null || !cls.toString().contains("Activity")) return;
+        String screen = pkg + "/" + cls;
+        boolean changed = !frontScreen.isEmpty() && !screen.equals(frontScreen);
+        frontScreen = screen;
+        // an app re-announcing the same screen (it does when our popup takes focus) is not a change
+        if (changed && !fetching && SystemClock.uptimeMillis() > quietUntil && (panel != null || popup != null)) { hidePanel(); hidePopup(); }
     }
+
+    private String frontScreen = "";
+    private long quietUntil = 0;   // ignore screen changes caused by our own port reading
 
     /** Reads "IP address & Port" from the system page if it is on screen. */
     boolean scanPort() {
-        AccessibilityNodeInfo root = getRootInActiveWindow();
+        AccessibilityNodeInfo root = topAppRoot();
         if (root == null) return false;
         List<AccessibilityNodeInfo> nodes = root.findAccessibilityNodeInfosByText(":");
         for (AccessibilityNodeInfo n : nodes) {
@@ -127,6 +141,25 @@ public class ControlService extends AccessibilityService {
     }
 
     /** Opens the system Wireless debugging page for a moment, reads the port, goes back, then runs then. */
+    private boolean fetching = false, portTried = false;
+
+    /** Reads the port with the popup still on screen: the system page opens behind it and closes again. */
+    private void readPortBehind() {
+        if (fetching || popup == null) return;
+        fetching = true; portTried = true;
+        setPopupFocusable(false);   // Back must go to the system page, not to the popup
+        fetchPort(() -> { fetching = false; quietUntil = SystemClock.uptimeMillis() + 1500; setPopupFocusable(true); if (adbLine != null) adbLine.setText(adbText()); });
+    }
+
+    private void setPopupFocusable(boolean f) {
+        if (popup == null) return;
+        try {
+            WindowManager.LayoutParams lp = (WindowManager.LayoutParams) popup.getLayoutParams();
+            if (f) lp.flags &= ~WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE; else lp.flags |= WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE;
+            wm.updateViewLayout(popup, lp);
+        } catch (Exception ignored) { }
+    }
+
     private void fetchPort(Runnable then) {
         String before = activePackage();
         try { startActivity(Net.pageIntent()); } catch (Exception e) { then.run(); return; }
@@ -134,8 +167,18 @@ public class ControlService extends AccessibilityService {
     }
 
     private String activePackage() {
-        AccessibilityNodeInfo root = getRootInActiveWindow();
+        AccessibilityNodeInfo root = topAppRoot();
         return root == null || root.getPackageName() == null ? "" : root.getPackageName().toString();
+    }
+
+    /** The app window in front, ignoring our own overlays (the "active" window can be the popup). */
+    private AccessibilityNodeInfo topAppRoot() {
+        for (android.view.accessibility.AccessibilityWindowInfo w : getWindows()) {
+            if (w.getType() != android.view.accessibility.AccessibilityWindowInfo.TYPE_APPLICATION) continue;
+            AccessibilityNodeInfo r = w.getRoot();
+            if (r != null) return r;
+        }
+        return getRootInActiveWindow();
     }
 
     private void fetchStep(int n, boolean wasInSettings, Runnable then) {
@@ -145,14 +188,33 @@ public class ControlService extends AccessibilityService {
         }, 500);
     }
 
-    /** Back out of Settings (it opens Developer options under the page) to the app that was in front. */
+    /**
+     * Back out of the system page to the app that was in front. The page opens in its own task with
+     * Developer options under it, so exactly two steps back are needed; each one waits until the
+     * screen has really changed, so no extra Back ever reaches the app behind.
+     */
     private void leaveSettings(int n, boolean wasInSettings, Runnable then) {
+        int before = topAppWindowId();
         performGlobalAction(GLOBAL_ACTION_BACK);
-        h.postDelayed(() -> {
-            if (!wasInSettings && n < 3 && "com.android.settings".equals(activePackage())) leaveSettings(n + 1, false, then);
+        waitForChange(before, 0, () -> {
+            if (n == 0 && "com.android.settings".equals(activePackage())) leaveSettings(1, wasInSettings, then);
             else then.run();
-        }, 450);
+        });
     }
+
+    private void waitForChange(int windowId, int tries, Runnable next) {
+        h.postDelayed(() -> {
+            if (topAppWindowId() != windowId || tries >= 12) next.run();
+            else waitForChange(windowId, tries + 1, next);
+        }, 120);
+    }
+
+    private int topAppWindowId() {
+        for (android.view.accessibility.AccessibilityWindowInfo w : getWindows())
+            if (w.getType() == android.view.accessibility.AccessibilityWindowInfo.TYPE_APPLICATION) return w.getId();
+        return -1;
+    }
+
     @Override public void onInterrupt() { }
 
     // ------------------------------------------------------------------ lifecycle
@@ -401,7 +463,22 @@ public class ControlService extends AccessibilityService {
             return on; }), rowLp(LinearLayout.LayoutParams.MATCH_PARENT));
         target.addView(switchRow(Icon.STARTUP, "Wireless debugging at next startup", Prefs.getInt(this, Prefs.ADB_NEXT_BOOT, 0) == 1, on -> {
             Prefs.putInt(this, Prefs.ADB_NEXT_BOOT, on ? 1 : 0); return on; }), rowLp(LinearLayout.LayoutParams.MATCH_PARENT));
-        note("Hand gestures off keeps the tracking camera off, the biggest battery saver.");
+
+
+        section("More");
+        target.addView(row(Icon.INFO, "About", false, v -> pageAbout()), rowLp(LinearLayout.LayoutParams.MATCH_PARENT));
+
+        target = right;
+        section("Wireless debugging");
+        target.addView(switchRow(Icon.DEBUG, "Wireless debugging", Net.adbWifiOn(this), on -> {
+            Net.setAdbWifi(this, on);
+            portTried = false;
+            if (on) h.postDelayed(this::readPortBehind, 2500);   // the port exists a moment after switching on
+            return Net.adbWifiOn(this); }), rowLp(LinearLayout.LayoutParams.MATCH_PARENT));
+        adbLine = note(adbText());
+        h.removeCallbacks(refreshAdb);
+        h.post(refreshAdb);
+        if (Net.adbWifiOn(this) && Net.adbPort() == 0 && !portTried) h.postDelayed(this::readPortBehind, 300);
 
         section("Controls");
         target.addView(switchRow(Icon.SCROLL, "Edge controls", Prefs.getInt(this, Prefs.EDGE, 1) == 1, on -> {
@@ -418,26 +495,7 @@ public class ControlService extends AccessibilityService {
         });
         sleepValue[0] = (TextView) sleep.getChildAt(1);
         target.addView(sleep, rowLp(LinearLayout.LayoutParams.MATCH_PARENT));
-
-
-
-        target = right;
-        section("Wireless debugging");
-        target.addView(switchRow(Icon.DEBUG, "Wireless debugging", Net.adbWifiOn(this), on -> {
-            Net.setAdbWifi(this, on); return Net.adbWifiOn(this); }), rowLp(LinearLayout.LayoutParams.MATCH_PARENT));
-        adbLine = note(adbText());
-        h.removeCallbacks(refreshAdb);
-        h.post(refreshAdb);
-        if (Net.adbWifiOn(this) && Net.adbPort() == 0)
-            target.addView(row(Icon.DEBUG, "Show port", false, v -> {
-                hidePopup();
-                fetchPort(this::pageMain);
-            }), rowLp(LinearLayout.LayoutParams.MATCH_PARENT));
-
-
-        section("More");
         target.addView(row(Icon.BUTTONS, "Buttons", false, v -> pageButtons()), rowLp(LinearLayout.LayoutParams.MATCH_PARENT));
-        target.addView(row(Icon.INFO, "About", false, v -> pageAbout()), rowLp(LinearLayout.LayoutParams.MATCH_PARENT));
     }
 
     private String adbText() {
@@ -450,7 +508,7 @@ public class ControlService extends AccessibilityService {
             if (sb.length() > 0) sb.append('\n');
             sb.append(ip[1]).append(port > 0 ? ":" + port : "").append("   (").append(ip[0]).append(')');
         }
-        if (port == 0) sb.append("\nPort: use Show port below.");
+        if (port == 0) sb.append(fetching ? "\nReading the port\u2026" : "\nPort: Settings \u203a System \u203a Developer options \u203a Wireless debugging");
         return sb.toString();
     }
 

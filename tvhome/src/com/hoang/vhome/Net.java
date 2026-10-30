@@ -35,7 +35,9 @@ final class Net {
             .setClassName("com.android.settings", "com.android.settings.Settings$DevelopmentSettingsDashboardActivity")
             .putExtra(Intent.EXTRA_COMPONENT_NAME, new ComponentName("com.android.settings",
                 "com.android.settings.development.qstile.DevelopmentTiles$WirelessDebugging"))
-            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_NO_ANIMATION);
+            // its own task, away from any Settings screens the person left open, and out of Recents
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_MULTIPLE_TASK | Intent.FLAG_ACTIVITY_NEW_DOCUMENT
+                | Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS | Intent.FLAG_ACTIVITY_NO_ANIMATION);
     }
 
     /** IPv4 addresses with a label: Wi-Fi first, then VPNs such as Tailscale. */

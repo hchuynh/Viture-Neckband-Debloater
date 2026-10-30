@@ -80,7 +80,7 @@ A centred pointer therefore needs a change in Viture's firmware. TV Home leaves 
 
 ## 8. Buttons
 
-The neckband reports four buttons: Volume up and Volume down (also used to click while head gaze is on), Power, and a mode button that Android sees as `F4`. Power and the mode button are handled by the system before accessibility services receive them, so TV Home can remap the volume buttons (while head gaze is off) and any controller button, not those two.
+The neckband reports four buttons: Volume up and Volume down (also used to click while head gaze is on), Power, and a mode button that Android sees as `F4`. Power and the mode button are handled by the system before accessibility services receive them, so TV Home can remap the volume buttons (while head gaze is off) and any controller button, not those two. While head gaze is on, the volume buttons do not reach apps either: Viture turns them into click and Back itself, which a key log confirmed, so long presses cannot be used for shortcuts.
 
 ## Things deliberately left alone
 
