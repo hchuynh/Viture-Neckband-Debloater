@@ -423,7 +423,7 @@ Closing apps is about tidiness, not battery: Android's app freezer already freez
 
 ### Head gaze on and gestures off at every startup
 
-Viture's firmware switches Headgaze Navigation off, and hand gestures back on, at every boot. Unless you switched *Head gaze on* off in the Settings popup, TV Home switches it back on as soon as the device starts, then checks again after 20 seconds, 1 minute and 3 minutes, while Viture's XR layer finishes starting. You can still switch it off during a session with the button below; the next restart turns it on again.
+Viture's firmware switches Headgaze Navigation off, and hand gestures back on, at every boot. Unless you switched *Head gaze* off under *At startup* in the Settings popup, TV Home switches it back on as soon as the device starts, then checks again after 20 seconds, 1 minute and 3 minutes, while Viture's XR layer finishes starting. You can still switch it off during a session with the button below; the next restart turns it on again.
 
 Hand gestures are handled the same way, but only if you chose them off: `apply gestures` sets the flag `vnd_gestures_off`, and while it is set TV Home switches gestures off again after each boot, which keeps the tracking camera from draining the battery. Rolling back the `gestures` journal or running `restore-stock` removes the flag, and TV Home then leaves gestures alone. A double press on the Settings key still toggles gestures during a session.
 
