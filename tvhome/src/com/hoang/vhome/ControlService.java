@@ -469,17 +469,6 @@ public class ControlService extends AccessibilityService {
         target.addView(row(Icon.INFO, "About", false, v -> pageAbout()), rowLp(LinearLayout.LayoutParams.MATCH_PARENT));
 
         target = right;
-        section("Wireless debugging");
-        target.addView(switchRow(Icon.DEBUG, "Wireless debugging", Net.adbWifiOn(this), on -> {
-            Net.setAdbWifi(this, on);
-            portTried = false;
-            if (on) h.postDelayed(this::readPortBehind, 2500);   // the port exists a moment after switching on
-            return Net.adbWifiOn(this); }), rowLp(LinearLayout.LayoutParams.MATCH_PARENT));
-        adbLine = note(adbText());
-        h.removeCallbacks(refreshAdb);
-        h.post(refreshAdb);
-        if (Net.adbWifiOn(this) && Net.adbPort() == 0 && !portTried) h.postDelayed(this::readPortBehind, 300);
-
         section("Controls");
         target.addView(switchRow(Icon.SCROLL, "Edge controls", Prefs.getInt(this, Prefs.EDGE, 1) == 1, on -> {
             Prefs.putInt(this, Prefs.EDGE, on ? 1 : 0);
@@ -496,6 +485,18 @@ public class ControlService extends AccessibilityService {
         sleepValue[0] = (TextView) sleep.getChildAt(1);
         target.addView(sleep, rowLp(LinearLayout.LayoutParams.MATCH_PARENT));
         target.addView(row(Icon.BUTTONS, "Buttons", false, v -> pageButtons()), rowLp(LinearLayout.LayoutParams.MATCH_PARENT));
+
+        section("Wireless debugging");
+        target.addView(switchRow(Icon.DEBUG, "Wireless debugging", Net.adbWifiOn(this), on -> {
+            Net.setAdbWifi(this, on);
+            portTried = false;
+            if (on) h.postDelayed(this::readPortBehind, 2500);   // the port exists a moment after switching on
+            return Net.adbWifiOn(this); }), rowLp(LinearLayout.LayoutParams.MATCH_PARENT));
+        adbLine = note(adbText());
+        h.removeCallbacks(refreshAdb);
+        h.post(refreshAdb);
+        if (Net.adbWifiOn(this) && Net.adbPort() == 0 && !portTried) h.postDelayed(this::readPortBehind, 300);
+
     }
 
     private String adbText() {
