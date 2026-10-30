@@ -15,6 +15,7 @@ final class Toggle extends View {
     Toggle(Context c, boolean on) { super(c); this.on = on; setClickable(false); setFocusable(false); }
 
     void set(boolean v) { on = v; invalidate(); }
+    boolean isOn() { return on; }
 
     @Override protected void onDraw(Canvas c) {
         float w = getWidth(), h = getHeight(), rad = h / 2f;

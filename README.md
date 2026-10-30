@@ -380,12 +380,12 @@ The panel stays open until you **click outside it**, **click the ☰ button agai
 |---|---|
 | **At startup: Head gaze** | On by default. Switch it off if you prefer to start without head tracking |
 | **At startup: Hand gestures** | On is Viture's default. Off switches the gesture camera off at once and keeps it off after every restart, the biggest single battery saving (the same flag `apply gestures` sets) |
-| **Wireless debugging** | Switches it on or off now, and lists the neckband's addresses (Wi-Fi and VPN, such as Tailscale) with the port. Android does not let apps read the port, so TV Home briefly opens the system Wireless debugging page behind the popup, reads its "IP address & Port" line and steps back. It also picks the port up whenever you open that page yourself |
+| **Wireless debugging** | Switches it on or off now; the line below shows the neckband's addresses (Wi-Fi first, then VPN such as Tailscale) and the port. Android does not let apps read the port, so TV Home briefly opens the system Wireless debugging page behind the popup, reads its "IP address & Port" line and steps back. It also picks the port up whenever you open that page yourself |
 | *(advanced)* Wireless debugging after the next restart | `adb shell settings put global vnd_adb_next_boot 1` before rebooting: TV Home turns it on once after the restart and shows the new address and port on screen |
-| **Edge controls** | On by default; see below |
-| **Sleep timer** | Off by default. Each click steps through 15, 30, 60 and 90 minutes and back to Off. When time is up, playback pauses and the screen locks, so the glasses go dark. While it runs, the ☰ panel shows the time left with a one-click cancel. It does not survive a restart |
-| **Buttons** | Remap buttons (below) |
-| **About** | Version, licence, and a link to this repository |
+| **Controls: Edge controls** | On by default; see below |
+| **Controls: Sleep timer** | Off by default. Each click steps through 15, 30, 60 and 90 minutes and back to Off. When time is up, playback pauses and the screen locks, so the glasses go dark. While it runs, the ☰ panel shows the time left with a one-click cancel. It does not survive a restart |
+| **Buttons: Remap buttons** | See below |
+| **ⓘ** (top right) | About: version, licence, and a link to this repository |
 
 Back closes the popup, or returns to the previous page inside it. The panel and the popup also close when the app behind them changes screen, so they never stay on top of something else.
 

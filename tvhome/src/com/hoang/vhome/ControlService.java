@@ -400,11 +400,17 @@ public class ControlService extends AccessibilityService {
         t.setTypeface(Typeface.DEFAULT_BOLD);
         t.setPadding(dp(back ? 10 : 6), 0, 0, 0);
         head.addView(t, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
+        if (headerAbout) {
+            LinearLayout.LayoutParams al = new LinearLayout.LayoutParams(dp(48), dp(48));
+            al.setMarginEnd(dp(10));
+            head.addView(iconButton(Icon.INFO, v -> pageAbout()), al);
+        }
         head.addView(iconButton(Icon.CLOSE, v -> hidePopup()), new LinearLayout.LayoutParams(dp(48), dp(48)));
         body.addView(head, rowLp(LinearLayout.LayoutParams.MATCH_PARENT));
         target = body;
     }
 
+    private boolean headerAbout = false;   // the main page shows an About button next to Close
     private Runnable backTo;
     private void pageBack() { if (backTo != null) backTo.run(); }
 
@@ -442,71 +448,121 @@ public class ControlService extends AccessibilityService {
     }
 
     private void pageMain() {
+        headerAbout = true;
         openPopup("TV Home settings", false, 860);
+        headerAbout = false;
         backTo = null;
+        // a strict grid: each column has two sections of the same height, every row is the same height
         LinearLayout cols = new LinearLayout(this);
         cols.setOrientation(LinearLayout.HORIZONTAL);
         LinearLayout left = column(0), right = column(0);
-        cols.addView(left, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1));
-        LinearLayout.LayoutParams rp = new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1);
+        cols.addView(left, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
+        LinearLayout.LayoutParams rp = new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1);
         rp.setMarginStart(dp(16));
-        cols.addView(right, rp);   // both columns as tall as the taller one
+        cols.addView(right, rp);
         target.addView(cols);
 
-        // left: what happens at startup, then Wireless debugging
         target = left;
         section("At startup");
-        target.addView(switchRow(Icon.GAZE_ON, "Head gaze", Prefs.getInt(this, Prefs.BOOT_GAZE, 1) == 1, on -> {
-            Prefs.putInt(this, Prefs.BOOT_GAZE, on ? 1 : 0); return on; }), rowLp(LinearLayout.LayoutParams.MATCH_PARENT));
+        target.addView(cell(Icon.GAZE_ON, "Head gaze", "Cursor follows your head", toggle(Prefs.getInt(this, Prefs.BOOT_GAZE, 1) == 1, on -> {
+            Prefs.putInt(this, Prefs.BOOT_GAZE, on ? 1 : 0); return on; })), cellLp());
         // On = Viture's default (hand gestures allowed). Off = gesture camera off now and after every restart.
-        target.addView(switchRow(Icon.HAND, "Hand gestures", Prefs.getInt(this, BootReceiver.GESTURES_OFF_FLAG, 0) == 0, on -> {
+        target.addView(cell(Icon.HAND, "Hand gestures", "Off keeps the camera off, saves battery", toggle(Prefs.getInt(this, BootReceiver.GESTURES_OFF_FLAG, 0) == 0, on -> {
             Prefs.putInt(this, BootReceiver.GESTURES_OFF_FLAG, on ? 0 : 1);
             Prefs.putInt(this, BootReceiver.GESTURES, on ? 1 : 0);
-            return on; }), rowLp(LinearLayout.LayoutParams.MATCH_PARENT));
+            return on; })), cellLp());
         section("Wireless debugging");
-        target.addView(switchRow(Icon.DEBUG, "Wireless debugging", Net.adbWifiOn(this), on -> {
+        LinearLayout adb = cell(Icon.DEBUG, "Wireless debugging", adbText(), toggle(Net.adbWifiOn(this), on -> {
             Net.setAdbWifi(this, on);
             portTried = false;
             if (on) h.postDelayed(this::readPortBehind, 2500);   // the port exists a moment after switching on
-            return Net.adbWifiOn(this); }), rowLp(LinearLayout.LayoutParams.MATCH_PARENT));
-        adbLine = note(adbText());
+            return Net.adbWifiOn(this); }));
+        adbLine = subtitleOf(adb);
+        adbLine.setAutoSizeTextTypeUniformWithConfiguration(10, 14, 1, android.util.TypedValue.COMPLEX_UNIT_SP);   // shrink rather than cut
+        target.addView(adb, cellLp());
         h.removeCallbacks(refreshAdb);
         h.post(refreshAdb);
         if (Net.adbWifiOn(this) && Net.adbPort() == 0 && !portTried) h.postDelayed(this::readPortBehind, 300);
 
-        // right: controls, then About at the bottom
         target = right;
         section("Controls");
-        target.addView(switchRow(Icon.SCROLL, "Edge controls", Prefs.getInt(this, Prefs.EDGE, 1) == 1, on -> {
+        target.addView(cell(Icon.SCROLL, "Edge controls", "Scroll and media at the screen edges", toggle(Prefs.getInt(this, Prefs.EDGE, 1) == 1, on -> {
             Prefs.putInt(this, Prefs.EDGE, on ? 1 : 0);
             if (on) edge.start(); else edge.stop();
-            return on; }), rowLp(LinearLayout.LayoutParams.MATCH_PARENT));
-        final TextView[] sleepValue = new TextView[1];
-        LinearLayout sleep = inlineRow(Icon.TIMER, "Sleep timer", sleepLabel(), v -> {
+            return on; })), cellLp());
+        TextView sleepValue = text(sleepLabel(), 17, ACCENT);
+        LinearLayout sleep = cell(Icon.TIMER, "Sleep timer", "Pauses and locks the screen", sleepValue);
+        sleep.setOnClickListener(v -> {
             int cur = 0;   // cycle Off, 15, 30, 60, 90 minutes
             for (int i = 0; i < SLEEP_MIN.length; i++) if (sleepAt > 0 && sleepLeftMin() <= SLEEP_MIN[i]) { cur = i; break; }
             int next = sleepAt == 0 ? 1 : (cur + 1) % SLEEP_MIN.length;
             setSleep(SLEEP_MIN[next]);
-            sleepValue[0].setText(sleepLabel());
+            sleepValue.setText(sleepLabel());
         });
-        sleepValue[0] = (TextView) sleep.getChildAt(1);
-        target.addView(sleep, rowLp(LinearLayout.LayoutParams.MATCH_PARENT));
-        target.addView(row(Icon.BUTTONS, "Buttons", false, v -> pageButtons()), rowLp(LinearLayout.LayoutParams.MATCH_PARENT));
-        target.addView(new View(this), new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1));
-        target.addView(row(Icon.INFO, "About", false, v -> pageAbout()), rowLp(LinearLayout.LayoutParams.MATCH_PARENT));
+        target.addView(sleep, cellLp());
+        section("Buttons");
+        LinearLayout buttons = cell(Icon.BUTTONS, "Remap buttons", "Neckband and controller", text("\u203a", 26, ACCENT));
+        buttons.setOnClickListener(v -> pageButtons());
+        target.addView(buttons, cellLp());
+    }
+
+    interface Toggler { boolean set(boolean on); }
+
+    /** A switch for a cell; the whole cell toggles it. */
+    private Toggle toggle(boolean on, Toggler t) {
+        Toggle tg = new Toggle(this, on);
+        tg.setTag(t);
+        return tg;
+    }
+
+    /** One grid cell: icon, title and a one-line subtitle on the left, a switch or value on the right. */
+    private LinearLayout cell(int icon, String title, String subtitle, View right) {
+        LinearLayout r = new LinearLayout(this);
+        r.setOrientation(LinearLayout.HORIZONTAL);
+        r.setGravity(Gravity.CENTER_VERTICAL);
+        r.setBackground(round(BUTTON, dp(12)));
+        r.setPaddingRelative(dp(22), 0, dp(18), 0);
+        View ic = new EdgeControls.IconView(this, icon, 28);
+        r.addView(ic, new LinearLayout.LayoutParams(dp(28), dp(28)));
+        LinearLayout texts = new LinearLayout(this);
+        texts.setOrientation(LinearLayout.VERTICAL);
+        texts.setPaddingRelative(dp(22), 0, dp(10), 0);
+        TextView t = text(title, 19, FG);
+        t.setSingleLine(true);
+        TextView sub = text(subtitle, 14, DIM);
+        sub.setSingleLine(true);
+        sub.setEllipsize(android.text.TextUtils.TruncateAt.END);
+        texts.addView(t); texts.addView(sub);
+        r.addView(texts, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
+        if (right instanceof Toggle) {
+            r.addView(right, new LinearLayout.LayoutParams(dp(46), dp(26)));
+            final Toggle tg = (Toggle) right;
+            final boolean[] state = {tg.isOn()};
+            r.setOnClickListener(v -> { state[0] = ((Toggler) tg.getTag()).set(!state[0]); tg.set(state[0]); });
+        } else if (right != null) r.addView(right);
+        return r;
+    }
+
+    private TextView subtitleOf(LinearLayout cell) { return (TextView) ((LinearLayout) cell.getChildAt(1)).getChildAt(1); }
+
+    private LinearLayout.LayoutParams cellLp() {
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(64));
+        lp.setMargins(0, dp(4), 0, dp(4));
+        return lp;
     }
 
     private String adbText() {
-        if (!Net.adbWifiOn(this)) return "Off. Leave it off when you are not using a computer.";
+        if (!Net.adbWifiOn(this)) return "Off";
         int port = Net.adbPort();
         List<String[]> ips = Net.addresses(this);
-        if (ips.isEmpty()) return "On, waiting for a network.";
+        if (ips.isEmpty()) return "Waiting for a network";
         StringBuilder sb = new StringBuilder();
-        for (String[] ip : ips) {
-            if (sb.length() > 0) sb.append('\n');
-            sb.append(ip[1]).append(port > 0 ? ":" + port : "").append("   (").append(ip[0]).append(')');
+        for (String[] ip : ips) {   // the port is the same on every address: show it once
+            if (sb.length() > 0) sb.append("  \u00b7  ");
+            sb.append(ip[1]);
         }
-        if (port == 0) sb.append(fetching ? "\nReading the port\u2026" : "\nPort: Settings \u203a System \u203a Developer options \u203a Wireless debugging");
+        if (port > 0) sb.append("  :").append(port);
+        else if (fetching) sb.append("  reading port\u2026");
         return sb.toString();
     }
 
