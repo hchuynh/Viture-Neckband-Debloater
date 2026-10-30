@@ -17,6 +17,7 @@ final class Prefs {
     static final String KEYMAP = "vnd_keymap";                   // "keycode=action,..."; unset = Menu opens the panel
     static final String LEGACY_MENU_KEY = "vnd_menu_key";        // 1.4/1.5 setting, still honoured if KEYMAP is unset
     static final String ADB_WIFI = "adb_wifi_enabled";
+    static final String EDGE = "vnd_edge_controls";              // 1 (default): right-edge media and scroll controls
 
     // Button actions
     static final String A_DEFAULT = "default", A_PANEL = "panel", A_BACK = "back", A_HOME = "home",

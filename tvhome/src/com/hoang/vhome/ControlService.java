@@ -57,6 +57,10 @@ public class ControlService extends AccessibilityService {
     private final Runnable stopCapture = () -> { if (capturing) { capturing = false; pageButtons(); } };
 
     private ContentObserver observer;
+    private EdgeControls edge;
+    private long sleepAt = 0;   // uptime when the sleep timer ends, 0 = off
+    static final int[] SLEEP_MIN = {0, 15, 30, 60, 90};
+    private final Runnable sleepNow = this::sleepNow;
 
     // ------------------------------------------------------------------ buttons
     @Override protected boolean onKeyEvent(KeyEvent e) {
@@ -182,12 +186,40 @@ public class ControlService extends AccessibilityService {
         lp.y = dp(BOTTOM_DP);
         wm.addView(fabFrame, lp);
 
+        edge = new EdgeControls(this);
+        if (Prefs.getInt(this, Prefs.EDGE, 1) == 1) edge.start();
         if (Prefs.getInt(this, Prefs.ADB_POPUP, 0) == 1) waitForAdb(0);
+    }
+
+    // ------------------------------------------------------------------ sleep timer
+    private void setSleep(int minutes) {
+        h.removeCallbacks(sleepNow);
+        sleepAt = minutes > 0 ? SystemClock.uptimeMillis() + minutes * 60_000L : 0;
+        if (sleepAt > 0) h.postAtTime(sleepNow, sleepAt);
+    }
+
+    private int sleepLeftMin() { return sleepAt == 0 ? 0 : (int) Math.max(1, (sleepAt - SystemClock.uptimeMillis() + 59_999) / 60_000); }
+
+    /** Time is up: pause whatever plays and lock the screen, so the glasses go dark. */
+    private void sleepNow() {
+        sleepAt = 0;
+        AudioManager am = getSystemService(AudioManager.class);
+        long t = SystemClock.uptimeMillis();
+        am.dispatchMediaKeyEvent(new KeyEvent(t, t, KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_MEDIA_PAUSE, 0));
+        am.dispatchMediaKeyEvent(new KeyEvent(t, t, KeyEvent.ACTION_UP, KeyEvent.KEYCODE_MEDIA_PAUSE, 0));
+        hidePanel(); hidePopup(); if (edge != null) edge.hideAll();
+        h.postDelayed(() -> performGlobalAction(GLOBAL_ACTION_LOCK_SCREEN), 800);
+    }
+
+    private String sleepLabel() {
+        return sleepAt == 0 ? "Off" : "Ends in " + sleepLeftMin() + " min";
     }
 
     @Override public void onDestroy() {
         try {
             if (observer != null) getContentResolver().unregisterContentObserver(observer);
+            if (edge != null) edge.stop();
+            h.removeCallbacks(sleepNow);
             hidePopup();
             if (panel != null) wm.removeView(panel);
             if (fabFrame != null) wm.removeView(fabFrame);
@@ -204,6 +236,14 @@ public class ControlService extends AccessibilityService {
     private void concealSoon() {
         h.removeCallbacks(fadeOut);
         h.postDelayed(fadeOut, 1500);
+    }
+
+    /** Focusable but not modal: receives Back while open, clicks elsewhere still reach the app. */
+    private WindowManager.LayoutParams focusParams(int w, int hgt) {
+        WindowManager.LayoutParams lp = params(w, hgt, WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH
+            | WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL);
+        lp.flags &= ~WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE;
+        return lp;
     }
 
     private WindowManager.LayoutParams params(int w, int hgt, int extraFlags) {
@@ -248,10 +288,12 @@ public class ControlService extends AccessibilityService {
             Prefs.putInt(this, HeadGazeTile.KEY, on ? 1 : 0);
             return gazeOn();
         }), rowLp(ROW_W));
+        if (sleepAt > 0)
+            list.addView(row(Icon.TIMER, "Sleep in " + sleepLeftMin() + " min: cancel", true, v -> setSleep(0)), rowLp(ROW_W));
         list.addView(row(Icon.SETTINGS, "Settings", true, v -> pageMain()), rowLp(ROW_W));
 
-        WindowManager.LayoutParams lp = params(WindowManager.LayoutParams.WRAP_CONTENT, WindowManager.LayoutParams.WRAP_CONTENT,
-            WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH);
+        panel.setOnBack(this::hidePanel);
+        WindowManager.LayoutParams lp = focusParams(WindowManager.LayoutParams.WRAP_CONTENT, WindowManager.LayoutParams.WRAP_CONTENT);
         lp.gravity = Gravity.END | Gravity.BOTTOM;   // opens upward from the button, above the taskbar
         lp.x = dp(RIGHT_DP - 120);
         lp.y = dp(BOTTOM_DP + SIZE_DP + 10);
@@ -281,8 +323,8 @@ public class ControlService extends AccessibilityService {
             body = column(16);
             sv.addView(body);
             popup.addView(sv, new HoverFrame.LayoutParams(dp(widthDp), HoverFrame.LayoutParams.WRAP_CONTENT));
-            WindowManager.LayoutParams lp = params(WindowManager.LayoutParams.WRAP_CONTENT, WindowManager.LayoutParams.WRAP_CONTENT,
-                WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH);
+            popup.setOnBack(() -> { if (backTo != null) backTo.run(); else hidePopup(); });
+            WindowManager.LayoutParams lp = focusParams(WindowManager.LayoutParams.WRAP_CONTENT, WindowManager.LayoutParams.WRAP_CONTENT);
             lp.gravity = Gravity.CENTER;
             lp.y = -dp(SIZE_DP / 2);   // sit slightly above centre, away from the taskbar
             wm.addView(popup, lp);
@@ -350,13 +392,34 @@ public class ControlService extends AccessibilityService {
         target.addView(cols);
         target = left;
         section("At startup");
-        target.addView(switchRow(Icon.GAZE_ON, "Head gaze on", Prefs.getInt(this, Prefs.BOOT_GAZE, 1) == 1, on -> {
+        target.addView(switchRow(Icon.GAZE_ON, "Head gaze", Prefs.getInt(this, Prefs.BOOT_GAZE, 1) == 1, on -> {
             Prefs.putInt(this, Prefs.BOOT_GAZE, on ? 1 : 0); return on; }), rowLp(LinearLayout.LayoutParams.MATCH_PARENT));
-        target.addView(switchRow(Icon.CLOSE, "Hand gestures off", Prefs.getInt(this, BootReceiver.GESTURES_OFF_FLAG, 0) == 1, on -> {
-            Prefs.putInt(this, BootReceiver.GESTURES_OFF_FLAG, on ? 1 : 0); return on; }), rowLp(LinearLayout.LayoutParams.MATCH_PARENT));
+        // On = Viture's default (hand gestures allowed). Off = gesture camera off now and after every restart.
+        target.addView(switchRow(Icon.HAND, "Hand gestures", Prefs.getInt(this, BootReceiver.GESTURES_OFF_FLAG, 0) == 0, on -> {
+            Prefs.putInt(this, BootReceiver.GESTURES_OFF_FLAG, on ? 0 : 1);
+            Prefs.putInt(this, BootReceiver.GESTURES, on ? 1 : 0);
+            return on; }), rowLp(LinearLayout.LayoutParams.MATCH_PARENT));
         target.addView(switchRow(Icon.STARTUP, "Wireless debugging at next startup", Prefs.getInt(this, Prefs.ADB_NEXT_BOOT, 0) == 1, on -> {
             Prefs.putInt(this, Prefs.ADB_NEXT_BOOT, on ? 1 : 0); return on; }), rowLp(LinearLayout.LayoutParams.MATCH_PARENT));
-        note("Applies once, then turns itself off. The address appears on screen when it is ready.");
+        note("Hand gestures off keeps the tracking camera off, the biggest battery saver.");
+
+        section("Controls");
+        target.addView(switchRow(Icon.SCROLL, "Edge controls", Prefs.getInt(this, Prefs.EDGE, 1) == 1, on -> {
+            Prefs.putInt(this, Prefs.EDGE, on ? 1 : 0);
+            if (on) edge.start(); else edge.stop();
+            return on; }), rowLp(LinearLayout.LayoutParams.MATCH_PARENT));
+        final TextView[] sleepValue = new TextView[1];
+        LinearLayout sleep = inlineRow(Icon.TIMER, "Sleep timer", sleepLabel(), v -> {
+            int cur = 0;   // cycle Off, 15, 30, 60, 90 minutes
+            for (int i = 0; i < SLEEP_MIN.length; i++) if (sleepAt > 0 && sleepLeftMin() <= SLEEP_MIN[i]) { cur = i; break; }
+            int next = sleepAt == 0 ? 1 : (cur + 1) % SLEEP_MIN.length;
+            setSleep(SLEEP_MIN[next]);
+            sleepValue[0].setText(sleepLabel());
+        });
+        sleepValue[0] = (TextView) sleep.getChildAt(1);
+        target.addView(sleep, rowLp(LinearLayout.LayoutParams.MATCH_PARENT));
+
+
 
         target = right;
         section("Wireless debugging");
@@ -370,6 +433,7 @@ public class ControlService extends AccessibilityService {
                 hidePopup();
                 fetchPort(this::pageMain);
             }), rowLp(LinearLayout.LayoutParams.MATCH_PARENT));
+
 
         section("More");
         target.addView(row(Icon.BUTTONS, "Buttons", false, v -> pageButtons()), rowLp(LinearLayout.LayoutParams.MATCH_PARENT));
@@ -562,6 +626,23 @@ public class ControlService extends AccessibilityService {
         r.addView(tg, new LinearLayout.LayoutParams(dp(46), dp(26)));
         final boolean[] state = {on};
         r.setOnClickListener(v -> { state[0] = sw.set(!state[0]); tg.set(state[0]); });
+        return r;
+    }
+
+    /** One-line row: icon and label on the left, the current value on the right; click to change it. */
+    private LinearLayout inlineRow(int icon, String label, String value, View.OnClickListener action) {
+        LinearLayout r = new LinearLayout(this);
+        r.setOrientation(LinearLayout.HORIZONTAL);
+        r.setGravity(Gravity.CENTER_VERTICAL);
+        r.setBackground(round(BUTTON, dp(12)));
+        r.setPaddingRelative(0, 0, dp(20), 0);
+        TextView t = text(label, 20, FG);
+        t.setGravity(Gravity.CENTER_VERTICAL);
+        t.setPaddingRelative(dp(24), dp(14), dp(12), dp(14));
+        setIcon(t, icon);
+        r.addView(t, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
+        r.addView(text(value, 17, ACCENT));
+        r.setOnClickListener(action);
         return r;
     }
 

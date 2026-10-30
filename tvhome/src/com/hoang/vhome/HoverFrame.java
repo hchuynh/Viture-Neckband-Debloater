@@ -7,7 +7,19 @@ import android.widget.FrameLayout;
 final class HoverFrame extends FrameLayout {
     interface Listener { void onHover(boolean inside); }
     private final Listener l;
+    private Runnable onBack;
     HoverFrame(Context c, Listener l) { super(c); this.l = l; }
+
+    /** Back (also the one Viture sends from the neckband) closes the window while it has focus. */
+    void setOnBack(Runnable r) { onBack = r; }
+
+    @Override public boolean dispatchKeyEvent(android.view.KeyEvent e) {
+        if (onBack != null && e.getKeyCode() == android.view.KeyEvent.KEYCODE_BACK) {
+            if (e.getAction() == android.view.KeyEvent.ACTION_UP) onBack.run();
+            return true;
+        }
+        return super.dispatchKeyEvent(e);
+    }
 
     @Override public boolean dispatchHoverEvent(MotionEvent e) {
         // The window root only gets HOVER_EXIT when the pointer leaves the whole window. Android

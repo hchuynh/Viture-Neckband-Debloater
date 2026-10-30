@@ -12,7 +12,8 @@ import android.graphics.drawable.Drawable;
 final class Icon extends Drawable {
     static final int MENU = 0, CLOSE = 1, CLOSE_ALL = 2, NOTIFICATIONS = 3, QUICK_SETTINGS = 4,
                      VOLUME_DOWN = 5, VOLUME_UP = 6, GAZE_ON = 7, GAZE_OFF = 8,
-                     SETTINGS = 9, INFO = 10, BUTTONS = 11, DEBUG = 12, BACK = 13, STARTUP = 14, CHECK = 15;
+                     SETTINGS = 9, INFO = 10, BUTTONS = 11, DEBUG = 12, BACK = 13, STARTUP = 14, CHECK = 15,
+                     UP = 16, DOWN = 17, PREV = 18, NEXT = 19, PLAY_PAUSE = 20, REWIND = 21, FORWARD = 22, SCROLL = 23, MUSIC = 24, TIMER = 25, HAND = 26;
     private final int type, fg, bg;
     private final Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
 
@@ -76,6 +77,42 @@ final class Icon extends Drawable {
                 c.drawLine(16, 7, 20.5f, 12, p); c.drawLine(20.5f, 12, 16, 17, p); c.drawLine(13.5f, 5.5f, 10.5f, 18.5f, p); break;
             case BACK:
                 stroke(); c.drawLine(19, 12, 5, 12, p); c.drawLine(5, 12, 11, 6, p); c.drawLine(5, 12, 11, 18, p); break;
+            case UP:
+                stroke(); c.drawLine(6, 15, 12, 9, p); c.drawLine(12, 9, 18, 15, p); break;
+            case DOWN:
+                stroke(); c.drawLine(6, 9, 12, 15, p); c.drawLine(12, 15, 18, 9, p); break;
+            case PREV: case NEXT: {   // bar plus triangle
+                fill(fg); Path t = new Path();
+                if (type == NEXT) { t.moveTo(6, 6); t.lineTo(15, 12); t.lineTo(6, 18); }
+                else { t.moveTo(18, 6); t.lineTo(9, 12); t.lineTo(18, 18); }
+                t.close(); c.drawPath(t, p);
+                stroke(); if (type == NEXT) c.drawLine(17.5f, 6, 17.5f, 18, p); else c.drawLine(6.5f, 6, 6.5f, 18, p); break; }
+            case PLAY_PAUSE: {
+                fill(fg); Path t = new Path(); t.moveTo(4, 6); t.lineTo(12, 12); t.lineTo(4, 18); t.close(); c.drawPath(t, p);
+                c.drawRoundRect(new RectF(14, 6, 16.5f, 18), 1, 1, p); c.drawRoundRect(new RectF(18.5f, 6, 21, 18), 1, 1, p); break; }
+            case REWIND: case FORWARD: {   // circular arrow with "10"
+                stroke(); RectF o = new RectF(4, 4, 20, 20);
+                if (type == FORWARD) { c.drawArc(o, -60, 300, false, p); c.drawLine(18, 4, 18, 8.5f, p); c.drawLine(18, 8.5f, 13.5f, 8.5f, p); }
+                else { c.drawArc(o, -120, -300, false, p); c.drawLine(6, 4, 6, 8.5f, p); c.drawLine(6, 8.5f, 10.5f, 8.5f, p); }
+                fill(fg); p.setTextSize(7.5f); p.setTextAlign(Paint.Align.CENTER); p.setFakeBoldText(true);
+                c.drawText("10", 12, 15, p); p.setFakeBoldText(false); break; }
+            case SCROLL:   // up and down arrows
+                stroke(); c.drawLine(12, 3.5f, 12, 20.5f, p); c.drawLine(8, 7.5f, 12, 3.5f, p); c.drawLine(16, 7.5f, 12, 3.5f, p);
+                c.drawLine(8, 16.5f, 12, 20.5f, p); c.drawLine(16, 16.5f, 12, 20.5f, p); break;
+            case MUSIC:   // note
+                stroke(); c.drawLine(10, 17, 10, 5, p); c.drawLine(10, 5, 19, 3.5f, p); c.drawLine(19, 3.5f, 19, 15, p);
+                fill(fg); c.drawCircle(7.5f, 17.5f, 2.6f, p); c.drawCircle(16.5f, 15.5f, 2.6f, p); break;
+            case TIMER:   // moon
+                fill(fg); Path moon = new Path(); moon.addCircle(12, 12, 8, Path.Direction.CW);
+                Path cut = new Path(); cut.addCircle(16, 8.5f, 7, Path.Direction.CW);
+                moon.op(cut, Path.Op.DIFFERENCE); c.drawPath(moon, p); break;
+            case HAND: {   // open palm: four fingers and a thumb
+                stroke(); Path hp = new Path();
+                hp.moveTo(7, 12); hp.lineTo(7, 6.5f); hp.moveTo(10, 11); hp.lineTo(10, 4.5f); hp.moveTo(13, 11); hp.lineTo(13, 4.5f);
+                hp.moveTo(16, 11.5f); hp.lineTo(16, 6.5f);
+                hp.moveTo(16, 11.5f); hp.quadTo(18.5f, 9, 19.5f, 11.5f); hp.lineTo(16.5f, 18); hp.quadTo(15, 21, 11.5f, 21);
+                hp.quadTo(7, 21, 7, 16); hp.lineTo(7, 12);
+                c.drawPath(hp, p); break; }
             case CHECK:
                 stroke(); c.drawLine(5, 12.5f, 10, 17.5f, p); c.drawLine(10, 17.5f, 19.5f, 7, p); break;
             case STARTUP: {   // power symbol
