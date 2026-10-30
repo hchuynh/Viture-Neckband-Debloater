@@ -57,7 +57,8 @@ public class BootReceiver extends BroadcastReceiver {
 
     @Override public void onReceive(Context c, Intent i) {
         apply(c);
-        if (ACTION_APPLY.equals(i.getAction())) return;
+        // the re-checks are only needed while Viture's layer starts after a boot, not after an app update
+        if (!Intent.ACTION_BOOT_COMPLETED.equals(i.getAction())) return;
         AlarmManager am = c.getSystemService(AlarmManager.class);
         for (int n = 0; n < DELAYS.length; n++) {
             PendingIntent pi = PendingIntent.getBroadcast(c, n,

@@ -6,6 +6,7 @@
 - Sleep timer (off by default): 15, 30, 60 or 90 minutes, then playback pauses and the screen locks. Time left and a cancel button appear in the panel.
 - Settings popup: "Hand gestures" is now a plain switch (on is Viture's default; off turns the camera off at once and after every restart); the debugging port is read automatically, with the system page opening behind the popup and closing again in exactly two steps; new layout with Controls (edge controls, sleep timer, buttons).
 - Back closes the panel and the popup; both also close when the app behind them changes screen.
+- Efficiency: TV Home measured idle at 0 CPU ticks per minute, no wakelocks, no jobs, about 9.5 MB of memory. Builds now strip debug information (smaller APK and code in memory), and app updates no longer schedule the three boot-time re-checks.
 - Finding: with head gaze on, Viture handles the neckband volume buttons itself, so apps cannot see short or long presses.
 
 ## 1.6.0 (2026-10-30)

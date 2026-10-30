@@ -7,9 +7,9 @@ KS="${KEYSTORE:-tvhome.keystore}"; KP="${KEYPASS:-tvhome}"
 rm -rf build && mkdir -p build/obj
 "$BUILD_TOOLS/aapt2" compile --dir res -o build/res.zip
 "$BUILD_TOOLS/aapt2" link -o build/base.apk --manifest AndroidManifest.xml -I "$ANDROID_JAR" build/res.zip
-javac -nowarn -source 8 -target 8 -bootclasspath "$ANDROID_JAR" -classpath "$ANDROID_JAR:$BUILD_TOOLS/core-lambda-stubs.jar" -d build/obj src/com/hoang/vhome/*.java
+javac -nowarn -g:none -source 8 -target 8 -bootclasspath "$ANDROID_JAR" -classpath "$ANDROID_JAR:$BUILD_TOOLS/core-lambda-stubs.jar" -d build/obj src/com/hoang/vhome/*.java
 (cd build/obj && jar cf ../classes.jar .)
-"$BUILD_TOOLS/d8" --lib "$ANDROID_JAR" --min-api 29 --output build build/classes.jar
+"$BUILD_TOOLS/d8" --release --lib "$ANDROID_JAR" --min-api 29 --output build build/classes.jar
 cp build/base.apk build/unsigned.apk && (cd build && zip -qj unsigned.apk classes.dex)
 "$BUILD_TOOLS/zipalign" -f 4 build/unsigned.apk build/aligned.apk
 [ -f "$KS" ] || keytool -genkeypair -keystore "$KS" -storepass "$KP" -keypass "$KP" -alias tvhome -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=TV Home"
