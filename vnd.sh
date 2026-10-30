@@ -6,7 +6,7 @@
 #  Works with bash 3.2+ (macOS default) and Linux.
 # =============================================================================
 set -u
-VERSION="1.5.1"
+VERSION="1.6.0"
 ROOT="$(cd "$(dirname "$0")" && pwd)"
 LISTS="$ROOT/lists"
 STATE="$ROOT/state"
@@ -19,6 +19,7 @@ TVHOME_PKG="com.hoang.vhome"
 TVHOME_HOME="$TVHOME_PKG/.HomeActivity"
 TVHOME_TILE="$TVHOME_PKG/.HeadGazeTile"
 TVHOME_A11Y="$TVHOME_PKG/$TVHOME_PKG.ControlService"
+TVHOME_PREFS="vnd_boot_head_gaze vnd_adb_next_boot vnd_adb_popup vnd_keymap vnd_menu_key"   # TV Home settings, removed with it
 STOCK_HOME="com.android.launcher3/com.android.searchlauncher.SearchLauncher"
 mkdir -p "$JOURNALS" "$SNAPS" "$BACKUPS"
 
@@ -433,6 +434,8 @@ cmd_tvhome(){ preflight; case "${1:-}" in
     jw "uninstall|$TVHOME_PKG"
     sh_ pm grant "$TVHOME_PKG" android.permission.WRITE_SECURE_SETTINGS
     sh_ appops set "$TVHOME_PKG" GET_USAGE_STATS allow
+    sh_ appops set "$TVHOME_PKG" SYSTEM_ALERT_WINDOW allow
+    local k v; for k in $TVHOME_PREFS; do v="$(sh_ settings get global "$k")"; jw "setting|global|$k|$v"; done
     local cur; cur="$(sh_ cmd package resolve-activity --brief -a android.intent.action.MAIN -c android.intent.category.HOME | tail -1)"
     case "$cur" in "$TVHOME_HOME"|*vhome*) cur="$STOCK_HOME";; esac
     jw "home|$cur"
@@ -447,13 +450,14 @@ cmd_tvhome(){ preflight; case "${1:-}" in
     sh_ settings put global vnd_tvhome_controls 1
     ok "TV Home installed: Home opens Google TV, Home again opens the app list"
     ok "\"Head gaze\" button added to quick settings; head gaze is switched on at every boot"
-    ok "floating control button enabled: Close app, Close all, Notifications, Quick settings, Volume, Head gaze"
+    ok "floating control button enabled: Close app, Close all, Notifications, Volume, Head gaze, Settings"
     ok "rollback journal: ${J#$ROOT/}";;
   uninstall)
     sh_ cmd package set-home-activity --user 0 "$STOCK_HOME" >/dev/null; sh_ cmd statusbar remove-tile "$TVHOME_TILE" >/dev/null 2>&1
     local acc; acc="$(sh_ settings get secure enabled_accessibility_services | tr ':' '\n' | grep -v ControlService | paste -sd: -)"
     if [ -z "$acc" ]; then sh_ settings delete secure enabled_accessibility_services >/dev/null; else sh_ settings put secure enabled_accessibility_services "$acc"; fi
     sh_ settings delete global vnd_tvhome_controls >/dev/null
+    for k in $TVHOME_PREFS; do sh_ settings delete global "$k" >/dev/null; done
     a uninstall "$TVHOME_PKG" >/dev/null 2>&1; ok "TV Home removed, stock launcher is home";;
   *) die "usage: tvhome install | uninstall";;
   esac; }

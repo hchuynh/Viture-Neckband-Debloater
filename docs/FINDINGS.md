@@ -68,6 +68,20 @@ Disney+ and YouTube, while actually playing video, used less CPU than the 3D hom
 
 A Chromecast draws wall power, its TV powers the panel, and decoded video goes from the decoder straight to HDMI without waking the CPU. The neckband powers the glasses from its battery, routes every frame through the XR compositor for a virtual screen with head-tracked reprojection, composes two displays, and runs full phone Android on a phone-class chip whose idle floor is higher than a small TV chip's. Per watt delivered to the eyes it is reasonable; the waste was in the optional extras.
 
+## 7. Head gaze: why the pointer cannot be centred
+
+Owners asked for a fixed pointer in the middle of the view, with the screen moving under it, as an alternative to the free-moving cursor.
+
+- **Where head gaze runs.** The cursor is computed inside Viture's XR service (`com.viture.xr`), which runs as the system user. It turns head orientation into a pointer position after a recentre, and switches the display mode while head gaze is on, restoring the default "smooth follow" mode when it stops.
+- **No switch for it.** Head gaze reads only two settings: `viture_settings_enable_head_gaze` and `viture_settings_forbid_head_gaze`. `eden_cursor_mode` exists but changes nothing visible.
+- **No way in for other apps.** The XR service and its head-pose data are protected by a signature permission, so only Viture-signed software can bind to them. A third-party app cannot read head orientation, so it cannot draw its own centred pointer either.
+
+A centred pointer therefore needs a change in Viture's firmware. TV Home leaves head gaze as Viture designed it.
+
+## 8. Buttons
+
+The neckband reports four buttons: Volume up and Volume down (also used to click while head gaze is on), Power, and a mode button that Android sees as `F4`. Power and the mode button are handled by the system before accessibility services receive them, so TV Home can remap the volume buttons (while head gaze is off) and any controller button, not those two.
+
 ## Things deliberately left alone
 
 `com.viture.xr`, `com.viture.launcher`, `com.eden.settings`, `com.eden.systemupgrade`, `com.eden.license.service`, Play services and the system UI. Disabling them risks the glasses' interface, updates or licensing, which no battery gain justifies.

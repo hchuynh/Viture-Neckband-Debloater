@@ -8,7 +8,8 @@ import android.os.SystemClock;
 import android.provider.Settings;
 
 /**
- * Keeps Headgaze Navigation on after every boot, and hand gestures off when the owner chose so.
+ * Keeps Headgaze Navigation on after every boot (unless switched off in TV Home settings), and hand
+ * gestures off when the owner chose so. It also turns Wireless debugging on once, at the next boot, on request.
  * Viture's firmware resets both at startup, so they are applied at boot and re-applied after
  * 20 s, 60 s and 180 s while the XR layer starts. Gestures are touched only while the global
  * flag vnd_gestures_off = 1 (set by `vnd.sh apply gestures`, removed by its rollback).
@@ -39,7 +40,14 @@ public class BootReceiver extends BroadcastReceiver {
 
     static void apply(Context c) {
         try {
-            Settings.Global.putInt(c.getContentResolver(), HeadGazeTile.KEY, 1);
+            if (Prefs.getInt(c, Prefs.BOOT_GAZE, 1) == 1)
+                Settings.Global.putInt(c.getContentResolver(), HeadGazeTile.KEY, 1);
+            // "Wireless debugging at next startup": Android switches it off at boot, so turn it on
+            // first minutes after startup. The control service shows the address and clears the request.
+            if (Prefs.getInt(c, Prefs.ADB_NEXT_BOOT, 0) == 1 && SystemClock.elapsedRealtime() < 10 * 60_000) {
+                if (!Net.adbWifiOn(c)) Net.setAdbWifi(c, true);
+                Prefs.putInt(c, Prefs.ADB_POPUP, 1);
+            }
             if (Settings.Global.getInt(c.getContentResolver(), GESTURES_OFF_FLAG, 0) == 1
                     && Settings.Global.getInt(c.getContentResolver(), GESTURES, 0) != 0)
                 Settings.Global.putInt(c.getContentResolver(), GESTURES, 0);

@@ -27,7 +27,7 @@ You are helping someone tune a VITURE Neckband with `vnd.sh`. The person may not
 
 ## Connection drops
 
-The wireless debugging port changes after sleep, reboot, Wi-Fi reconnects or toggling. When commands fail with `unreachable` or `Connection refused`, do not scan ports or retry in a loop: ask the person for the new "IP address & Port" and run `connect` again. Suggest raising the screen timeout while working.
+The wireless debugging port changes after sleep, reboot, Wi-Fi reconnects or toggling. When commands fail with `unreachable` or `Connection refused`, do not scan ports or retry in a loop: ask the person for the new "IP address & Port" and run `connect` again. Suggest raising the screen timeout while working. If TV Home is installed, the person can open ☰ → Settings to see the current address and port, or switch on *Wireless debugging at next startup* before a reboot so the new address appears on screen.
 
 If the local adb crashes with `fdsan` or `daemon didn't ACK` (seen in some VMs), prefix commands with `VND_NO_MDNS=1`.
 

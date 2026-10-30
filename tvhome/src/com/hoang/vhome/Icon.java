@@ -11,7 +11,8 @@ import android.graphics.drawable.Drawable;
 /** Simple line icons drawn on a 24x24 grid. Original artwork, no external icon set. */
 final class Icon extends Drawable {
     static final int MENU = 0, CLOSE = 1, CLOSE_ALL = 2, NOTIFICATIONS = 3, QUICK_SETTINGS = 4,
-                     VOLUME_DOWN = 5, VOLUME_UP = 6, GAZE_ON = 7, GAZE_OFF = 8;
+                     VOLUME_DOWN = 5, VOLUME_UP = 6, GAZE_ON = 7, GAZE_OFF = 8,
+                     SETTINGS = 9, INFO = 10, BUTTONS = 11, DEBUG = 12, BACK = 13, STARTUP = 14, CHECK = 15;
     private final int type, fg, bg;
     private final Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
 
@@ -55,6 +56,30 @@ final class Icon extends Drawable {
                 if (type == GAZE_ON) { fill(fg); c.drawCircle(12, 12, 3.2f, p); }
                 else { c.drawCircle(12, 12, 3, p); c.drawLine(4, 20, 20, 4, p); }
                 break; }
+            case SETTINGS: {   // gear: ring with eight teeth
+                stroke(); c.drawCircle(12, 12, 3, p);
+                for (int i = 0; i < 8; i++) {
+                    double a = Math.PI / 4 * i;
+                    c.drawLine((float) (12 + 6 * Math.cos(a)), (float) (12 + 6 * Math.sin(a)),
+                               (float) (12 + 9 * Math.cos(a)), (float) (12 + 9 * Math.sin(a)), p);
+                }
+                c.drawCircle(12, 12, 6, p); break; }
+            case INFO:
+                stroke(); c.drawCircle(12, 12, 9, p); c.drawLine(12, 11, 12, 16.5f, p);
+                fill(fg); c.drawCircle(12, 7.6f, 1.3f, p); break;
+            case BUTTONS:   // controller with a d-pad and two buttons
+                stroke(); c.drawRoundRect(new RectF(2.5f, 7, 21.5f, 17), 5, 5, p);
+                c.drawLine(6, 12, 10, 12, p); c.drawLine(8, 10, 8, 14, p);
+                fill(fg); c.drawCircle(15.5f, 11, 1.3f, p); c.drawCircle(18, 13.5f, 1.3f, p); break;
+            case DEBUG:   // angle brackets
+                stroke(); c.drawLine(8, 7, 3.5f, 12, p); c.drawLine(3.5f, 12, 8, 17, p);
+                c.drawLine(16, 7, 20.5f, 12, p); c.drawLine(20.5f, 12, 16, 17, p); c.drawLine(13.5f, 5.5f, 10.5f, 18.5f, p); break;
+            case BACK:
+                stroke(); c.drawLine(19, 12, 5, 12, p); c.drawLine(5, 12, 11, 6, p); c.drawLine(5, 12, 11, 18, p); break;
+            case CHECK:
+                stroke(); c.drawLine(5, 12.5f, 10, 17.5f, p); c.drawLine(10, 17.5f, 19.5f, 7, p); break;
+            case STARTUP: {   // power symbol
+                stroke(); c.drawArc(new RectF(4, 4.5f, 20, 20.5f), -60, 300, false, p); c.drawLine(12, 3, 12, 11, p); break; }
         }
         c.restore();
     }

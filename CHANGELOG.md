@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.6.0 (2026-10-30)
+
+- TV Home 1.6.0, panel: Notifications and Quick settings merged into one Notifications button (both open the same shade on this device); Vol − and Vol + side by side; Head gaze as a row with an on/off switch; new Settings button. Back closes the panel and popups.
+- Settings popup: head gaze at startup (on by default), hand gestures off at startup, Wireless debugging now or at the next startup only, the neckband's Wi-Fi and VPN addresses with the debugging port, button remapping, and About with the repository link.
+- Wireless debugging at next startup: turned on once after the restart, then a popup shows the address and port to connect to.
+- Button remapping for the neckband volume buttons (while head gaze is off) and any controller button; replaces `vnd_menu_key`, which is still honoured if no mapping was saved.
+- New permissions: display over other apps (granted by `tvhome install`, needed to open the Wireless debugging page and the About link from the background) and network state (addresses only, no internet access).
+- `tvhome install` journals and `tvhome uninstall` removes TV Home's own settings.
+- FINDINGS: why a centred head-gaze pointer is not possible without a Viture firmware change, and which buttons can be remapped.
+
 ## 1.5.1 (2026-10-30)
 
 - TV Home 1.5.1: switches its control service back on at every boot. Viture's firmware clears the list of enabled accessibility services at startup, which made the ☰ button disappear after a reboot. Other enabled services are kept; only active while the flag `vnd_tvhome_controls` is set.

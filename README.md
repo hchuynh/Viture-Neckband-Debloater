@@ -293,16 +293,17 @@ T bloat        com.meig.logger                    # [safe] Diagnostic logger fro
 
 ### The helper app in one minute
 
-**TV Home** (`com.hoang.vhome`, about 20 KB) is a small companion app that ships with VND in [tvhome/](tvhome/), source code included. VND's script changes settings; TV Home adds the few things a settings change cannot do. It has four parts:
+**TV Home** (`com.hoang.vhome`, about 20 KB) is a small companion app that ships with VND in [tvhome/](tvhome/), source code included. VND's script changes settings; TV Home adds the few things a settings change cannot do. It has five parts:
 
 | Part | What it does | Why it is needed |
 |---|---|---|
 | **Home toggle** | Home opens Google TV; Home again opens the stock app list | Android only lets a real home app decide what Home opens |
 | **Head gaze and gestures at startup** | Switches Headgaze Navigation on, and hand gestures off if you chose so, at every boot | Viture's firmware resets both at each restart |
 | **Head gaze button** | A quick-settings button to switch head tracking on and off | Viture disables volume keys while head gaze is on |
-| **Floating controls** | A hidden ☰ button in the taskbar, also opened by a controller's Menu key, with Close app, Close all, Notifications, Quick settings, Volume and Head gaze | The plain interface relies on swipes and drags a head-gaze cursor cannot perform |
+| **Floating controls** | A hidden ☰ button in the taskbar, also opened by a controller's Menu key, with Close app, Close all, Notifications, Volume, Head gaze and Settings | The plain interface relies on swipes and drags a head-gaze cursor cannot perform |
+| **Settings popup** | Startup choices, Wireless debugging with its address, button remapping, About | Changing these otherwise needs a computer and adb |
 
-It has no screen of its own, no background activity beyond the startup check, **no internet permission**, no analytics, and it stores nothing.
+It has no app screen of its own (everything lives in the panel), no background activity beyond the startup check, **no internet permission**, no analytics, and it stores nothing.
 
 ### What it enables, and why
 
@@ -312,12 +313,14 @@ It has no screen of its own, no background activity beyond the startup check, **
 |---|---|---|
 | **Default home app** | Deciding what Home opens | Settings → Apps → Default apps → Home app |
 | **Usage access** | Knowing which app was last in front, so Home can toggle between Google TV and the app list | Settings → Apps → Special app access → Usage access |
-| **Write secure settings** (`WRITE_SECURE_SETTINGS`, grantable only over adb) | Switching Viture's head-gaze setting from the button, the panel and at boot | `adb shell pm revoke com.hoang.vhome android.permission.WRITE_SECURE_SETTINGS` |
+| **Write secure settings** (`WRITE_SECURE_SETTINGS`, grantable only over adb) | Switching Viture's head-gaze setting from the button, the panel and at boot; switching Wireless debugging on or off from the Settings popup | `adb shell pm revoke com.hoang.vhome android.permission.WRITE_SECURE_SETTINGS` |
 | **Run at startup** (`RECEIVE_BOOT_COMPLETED`) | The head-gaze check after each boot | Uninstall the app |
-| **Accessibility service** "TV Home controls" | Drawing the controls over full-screen apps, performing the Recents swipe to close apps, opening notifications and quick settings, listening for the controller's Menu key | Settings → Accessibility → TV Home controls |
+| **Display over other apps** (`SYSTEM_ALERT_WINDOW`) | Letting the panel open a page while another app is in front: the Wireless debugging page (to read the port) and the GitHub link in About. Android blocks such launches from background apps otherwise | Settings → Apps → Special app access → Display over other apps |
+| **Network state** (`ACCESS_NETWORK_STATE`, granted automatically) | Showing the neckband's Wi-Fi and VPN addresses next to Wireless debugging. This is not internet access | Uninstall the app |
+| **Accessibility service** "TV Home controls" | Drawing the controls over full-screen apps, performing the Recents swipe to close apps, opening notifications, listening for the buttons you remap, reading the port on the Wireless debugging page | Settings → Accessibility → TV Home controls |
 | **Quick-settings tile** | The Head gaze button in the pull-down panel | Edit the quick-settings panel |
 
-`./vnd.sh tvhome uninstall` removes the app and all of the above in one step, and the `tvhome` rollback journal restores the previous home app and accessibility settings.
+`./vnd.sh tvhome uninstall` removes the app, all of the above and the app's own settings (`vnd_boot_head_gaze`, `vnd_adb_next_boot`, `vnd_keymap` and the others listed in `vnd.sh`) in one step, and the `tvhome` rollback journal restores the previous home app, accessibility settings and app settings.
 
 ### Why the app is signed with a private key
 
@@ -355,34 +358,51 @@ TV Home adds a **☰ button** in the taskbar row, just left of Back, Home and Re
 <p align="center"><img src="docs/img/button-hover.png" alt="The control button is invisible at rest and appears when the cursor reaches its spot next to Back, Home and Recents" width="640"></p>
 <p align="center"><img src="docs/img/panel.png" alt="The control panel" width="300"></p>
 
-
 | Button | What it does |
 |---|---|
 | **Close app** | Closes the app you are using (opens Recents, swipes its card up, returns Home) |
 | **Close all apps** | Clears Recents (uses Android's Clear all button when available, otherwise swipes each card) |
-| **Notifications** | Opens the notification shade |
-| **Quick settings** | Opens quick settings |
-| **Volume down / up** | Changes media volume, also while head gaze has the volume keys disabled |
-| **Head gaze** | Switches head tracking on or off |
+| **Notifications** | Opens the shade, with notifications and quick settings together (on this device both open the same shade) |
+| **Vol − / Vol +** | Changes media volume, also while head gaze has the volume keys disabled |
+| **Head gaze** | The switch on the right shows the current state; click the row to change it |
+| **Settings** | Opens the Settings popup described below |
 
-The panel stays open until you **click outside it** or **click the ☰ button again**. Volume and Head gaze keep it open, so you can press Volume up several times in a row; Close app, Close all, Notifications and Quick settings close it because they take you somewhere else. A click outside the panel also reaches whatever is underneath, as with any Android overlay, so click an empty area to close it.
+The panel stays open until you **click outside it**, **click the ☰ button again** or press **Back**. Volume and Head gaze keep it open, so you can press Vol + several times in a row; the other buttons close it because they take you somewhere else. A click outside the panel also reaches whatever is underneath, as with any Android overlay, so click an empty area to close it.
 
-**From an external controller.** The **Menu** key opens and closes the panel too. Touchpad remotes such as the CheerTouch have a dedicated Menu button, which modern Android apps ignore, so nothing is lost by giving it this job. The key is consumed and does not also reach the app underneath. To use a different key, or switch this off:
+**From an external controller.** The **Menu** key opens and closes the panel too. Touchpad remotes such as the CheerTouch have a dedicated Menu button, which modern Android apps ignore, so nothing is lost by giving it this job. The key is consumed and does not also reach the app underneath. You can give it another job, or give this job to another button, under **Settings → Buttons**.
 
-```bash
-adb shell settings put global vnd_menu_key 82    # 82 = Menu (default); any Android key code works
-adb shell settings put global vnd_menu_key 0     # off
-```
+### The Settings popup
+
+<p align="center"><img src="docs/img/settings.png" alt="TV Home settings: startup choices, Wireless debugging, Buttons and About" width="640"></p>
+
+| Setting | What it does |
+|---|---|
+| **At startup: Head gaze on** | On by default. Switch it off if you prefer to start without head tracking |
+| **At startup: Hand gestures off** | The same flag `apply gestures` sets; keeps the gesture camera off after each boot |
+| **At startup: Wireless debugging at next startup** | Turns Wireless debugging on once, at the next restart, then switches itself off. As soon as the connection is ready, a popup shows the address and port to use with `./vnd.sh connect`. Useful because the port changes at every restart |
+| **Wireless debugging** | Switches it on or off now, and lists the neckband's addresses (Wi-Fi and VPN, such as Tailscale) with the port |
+| **Show port** | Android does not let apps read the debugging port, so TV Home opens the system Wireless debugging page for a moment, reads its "IP address & Port" line and comes back. It also picks the port up whenever you open that page yourself |
+| **Buttons** | Remap buttons (below) |
+| **About** | Version, licence, and a link to this repository |
+
+Leave Wireless debugging off when you are not using a computer: anyone you paired can reach the neckband while it is on.
+
+**Buttons.** Choose a new job for the neckband volume buttons, the controller Menu key, or any other controller button (*Add another button*, then press it): open TV Home controls, Back, Home, Recent apps, Notifications, Close app, Play/pause, Head gaze on/off, Volume up/down, Do nothing, or its original function. Two limits come from the system, not from TV Home:
+
+- While head gaze is on, Viture uses the neckband volume buttons to click. Their new job applies only while head gaze is off.
+- The power button and the neckband mode button are handled by the system before any app sees them, so they cannot be remapped.
+
+<p align="center"><img src="docs/img/buttons.png" alt="Button remapping" width="420"></p>
 
 The invisible spot still answers clicks, so it works even if a cursor never sends hover events. It is the size of one taskbar button; the rest of the screen is unaffected. The icons are original line drawings made in code, so the app bundles no third-party icon set.
 
-The controls run as an Android **accessibility service** called *TV Home controls*, the only kind of app allowed to draw over full-screen apps and perform gestures without root. It reads the Recents screen only when you press a Close button, does nothing in the background, and stores or sends nothing. `tvhome install` enables it next to any accessibility services you already use; `tvhome uninstall` removes only it. You can also switch it off in **Settings → Accessibility → TV Home controls**. Viture's firmware clears enabled accessibility services at every boot, so TV Home switches its own service back on during its startup routine (and only its own); to keep it off permanently, run `tvhome uninstall` or roll back its journal.
+The controls run as an Android **accessibility service** called *TV Home controls*, the only kind of app allowed to draw over full-screen apps and perform gestures without root. It reads the screen in two cases only: the Recents screen when you press a Close button, and the "IP address & Port" line of the system Wireless debugging page. It does nothing else in the background, and stores or sends nothing. `tvhome install` enables it next to any accessibility services you already use; `tvhome uninstall` removes only it. You can also switch it off in **Settings → Accessibility → TV Home controls**. Viture's firmware clears enabled accessibility services at every boot, so TV Home switches its own service back on during its startup routine (and only its own); to keep it off permanently, run `tvhome uninstall` or roll back its journal.
 
 Closing apps is about tidiness, not battery: Android's app freezer already freezes apps left in the background after about 10 minutes, so they stop using power.
 
 ### Head gaze on and gestures off at every startup
 
-Viture's firmware switches Headgaze Navigation off, and hand gestures back on, at every boot. TV Home switches it back on as soon as the device starts, then checks again after 20 seconds, 1 minute and 3 minutes, while Viture's XR layer finishes starting. You can still switch it off during a session with the button below; the next restart turns it on again.
+Viture's firmware switches Headgaze Navigation off, and hand gestures back on, at every boot. Unless you switched *Head gaze on* off in the Settings popup, TV Home switches it back on as soon as the device starts, then checks again after 20 seconds, 1 minute and 3 minutes, while Viture's XR layer finishes starting. You can still switch it off during a session with the button below; the next restart turns it on again.
 
 Hand gestures are handled the same way, but only if you chose them off: `apply gestures` sets the flag `vnd_gestures_off`, and while it is set TV Home switches gestures off again after each boot, which keeps the tracking camera from draining the battery. Rolling back the `gestures` journal or running `restore-stock` removes the flag, and TV Home then leaves gestures alone. A double press on the Settings key still toggles gestures during a session.
 
@@ -543,7 +563,7 @@ Environment
 | Volume keys do nothing | Head gaze is on (Viture behavior). Use the floating ☰ button → Volume, or switch head gaze off. |
 | Hand gestures came back | A double press on the Settings key toggles them: double press again. After a reboot they are switched off automatically once `apply gestures` has run with TV Home installed. |
 | No cursor in the plain interface | Head gaze is off. Use the floating ☰ button → Head gaze, or `apply gestures`. |
-| The ☰ button is missing | It is invisible until the cursor hovers over its spot, just left of Back/Home/Recents. If it never appears after a reboot, you are on TV Home 1.5.0 or older, whose service is switched off by the firmware at boot: run `tvhome install` again to get 1.5.1, which restores it by itself. |
+| The ☰ button is missing | It is invisible until the cursor hovers over its spot, just left of Back/Home/Recents. If it never appears after a reboot, you are on TV Home 1.5.0 or older, whose service is switched off by the firmware at boot: run `tvhome install` again to get the current version, which restores it by itself. |
 | Close app did nothing | Recents took longer than usual to open. Press it again; on a slow first launch after boot this can happen once. |
 | A Bluetooth controller stopped working | Roll back the `experimental` journal or `configure` → set `com.eden.vaservice` to stock. |
 | An app you need is missing | It was disabled. `configure`, set it to stock, `apply`. |
