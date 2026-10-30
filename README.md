@@ -406,7 +406,12 @@ Head gaze can point and click but not drag, which makes long lists, web pages an
 - **Double-click** a half to jump to the top or the bottom.
 - **Press and drag** along it to scroll continuously; the further you drag, the faster it goes.
 
-While something is **playing**, a **media bar** also appears in the middle of the screen: previous, back 10 seconds, play/pause, forward 10 seconds, next. When nothing plays it stays hidden. In YouTube, which ignores the standard skip keys, the skip buttons double-tap the left or right part of the player, exactly as you would with a finger (10 seconds by default, adjustable in YouTube's settings); other apps get the standard media keys and choose their own skip length.
+<p align="center"><img src="docs/img/edge-scroll.png" alt="The edge scrollbar: top half scrolls up, bottom half scrolls down" height="300"></p>
+
+While something is **playing**, a **media bar** also appears in the middle of the screen: previous, back 10 seconds, play/pause, forward 10 seconds, next. When nothing plays it stays hidden.
+
+<p align="center"><img src="docs/img/edge-media.png" alt="The media bar: previous, back, play/pause, forward, next" width="420"></p>
+ In YouTube, which ignores the standard skip keys, the skip buttons double-tap the left or right part of the player, exactly as you would with a finger (10 seconds by default, adjustable in YouTube's settings); other apps get the standard media keys and choose their own skip length.
 
 Both stay open while you use them, and close on a click anywhere else or 3 seconds after the cursor was last on them. A cursor that only sweeps past the edge does not open them: it has to rest there for a moment. Switch the feature off in Settings if you never want it. Neckband buttons cannot open them, because Viture keeps the volume buttons for itself while head gaze is on.
 
