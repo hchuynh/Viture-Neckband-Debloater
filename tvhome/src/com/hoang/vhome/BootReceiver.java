@@ -12,12 +12,30 @@ import android.provider.Settings;
  * Viture's firmware resets both at startup, so they are applied at boot and re-applied after
  * 20 s, 60 s and 180 s while the XR layer starts. Gestures are touched only while the global
  * flag vnd_gestures_off = 1 (set by `vnd.sh apply gestures`, removed by its rollback).
+ * The firmware also clears the list of enabled accessibility services at boot; while the flag
+ * vnd_tvhome_controls = 1 (set by `vnd.sh tvhome install`) the control service is added back,
+ * keeping any other enabled services as they are.
  */
 public class BootReceiver extends BroadcastReceiver {
     static final String ACTION_APPLY = "com.hoang.vhome.APPLY_HEAD_GAZE";
     static final long[] DELAYS = {20_000, 60_000, 180_000};
 
     static final String GESTURES = "eden_gesture_mode", GESTURES_OFF_FLAG = "vnd_gestures_off";
+    static final String CONTROLS_FLAG = "vnd_tvhome_controls";
+    static final String CONTROL_SERVICE = "com.hoang.vhome/com.hoang.vhome.ControlService";
+
+    static void ensureControls(Context c) {
+        if (Settings.Global.getInt(c.getContentResolver(), CONTROLS_FLAG, 0) != 1) return;
+        String list = Settings.Secure.getString(c.getContentResolver(), Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES);
+        if (list == null || list.isEmpty() || list.equals("null")) list = "";
+        for (String item : list.split(":")) if (item.equalsIgnoreCase(CONTROL_SERVICE)) {
+            Settings.Secure.putInt(c.getContentResolver(), Settings.Secure.ACCESSIBILITY_ENABLED, 1);
+            return;
+        }
+        Settings.Secure.putString(c.getContentResolver(), Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES,
+            list.isEmpty() ? CONTROL_SERVICE : list + ":" + CONTROL_SERVICE);
+        Settings.Secure.putInt(c.getContentResolver(), Settings.Secure.ACCESSIBILITY_ENABLED, 1);
+    }
 
     static void apply(Context c) {
         try {
@@ -25,6 +43,7 @@ public class BootReceiver extends BroadcastReceiver {
             if (Settings.Global.getInt(c.getContentResolver(), GESTURES_OFF_FLAG, 0) == 1
                     && Settings.Global.getInt(c.getContentResolver(), GESTURES, 0) != 0)
                 Settings.Global.putInt(c.getContentResolver(), GESTURES, 0);
+            ensureControls(c);
         } catch (SecurityException ignored) { /* WRITE_SECURE_SETTINGS not granted */ }
     }
 

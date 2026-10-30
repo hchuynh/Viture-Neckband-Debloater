@@ -376,7 +376,7 @@ adb shell settings put global vnd_menu_key 0     # off
 
 The invisible spot still answers clicks, so it works even if a cursor never sends hover events. It is the size of one taskbar button; the rest of the screen is unaffected. The icons are original line drawings made in code, so the app bundles no third-party icon set.
 
-The controls run as an Android **accessibility service** called *TV Home controls*, the only kind of app allowed to draw over full-screen apps and perform gestures without root. It reads the Recents screen only when you press a Close button, does nothing in the background, and stores or sends nothing. `tvhome install` enables it next to any accessibility services you already use; `tvhome uninstall` removes only it. You can also switch it off in **Settings → Accessibility → TV Home controls**.
+The controls run as an Android **accessibility service** called *TV Home controls*, the only kind of app allowed to draw over full-screen apps and perform gestures without root. It reads the Recents screen only when you press a Close button, does nothing in the background, and stores or sends nothing. `tvhome install` enables it next to any accessibility services you already use; `tvhome uninstall` removes only it. You can also switch it off in **Settings → Accessibility → TV Home controls**. Viture's firmware clears enabled accessibility services at every boot, so TV Home switches its own service back on during its startup routine (and only its own); to keep it off permanently, run `tvhome uninstall` or roll back its journal.
 
 Closing apps is about tidiness, not battery: Android's app freezer already freezes apps left in the background after about 10 minutes, so they stop using power.
 
@@ -543,7 +543,7 @@ Environment
 | Volume keys do nothing | Head gaze is on (Viture behavior). Use the floating ☰ button → Volume, or switch head gaze off. |
 | Hand gestures came back | A double press on the Settings key toggles them: double press again. After a reboot they are switched off automatically once `apply gestures` has run with TV Home installed. |
 | No cursor in the plain interface | Head gaze is off. Use the floating ☰ button → Head gaze, or `apply gestures`. |
-| The ☰ button is missing | It is invisible until the cursor hovers over its spot, just left of Back/Home/Recents. If it never appears, the accessibility service is off: Settings → Accessibility → TV Home controls, or run `tvhome install` again. |
+| The ☰ button is missing | It is invisible until the cursor hovers over its spot, just left of Back/Home/Recents. If it never appears after a reboot, you are on TV Home 1.5.0 or older, whose service is switched off by the firmware at boot: run `tvhome install` again to get 1.5.1, which restores it by itself. |
 | Close app did nothing | Recents took longer than usual to open. Press it again; on a slow first launch after boot this can happen once. |
 | A Bluetooth controller stopped working | Roll back the `experimental` journal or `configure` → set `com.eden.vaservice` to stock. |
 | An app you need is missing | It was disabled. `configure`, set it to stock, `apply`. |

@@ -6,7 +6,7 @@
 #  Works with bash 3.2+ (macOS default) and Linux.
 # =============================================================================
 set -u
-VERSION="1.5.0"
+VERSION="1.5.1"
 ROOT="$(cd "$(dirname "$0")" && pwd)"
 LISTS="$ROOT/lists"
 STATE="$ROOT/state"
@@ -443,6 +443,8 @@ cmd_tvhome(){ preflight; case "${1:-}" in
       jw "setting|secure|enabled_accessibility_services|$acc"; jw "setting|secure|accessibility_enabled|$accon"
       if [ -z "$acc" ] || [ "$acc" = null ]; then acc="$TVHOME_A11Y"; else acc="$acc:$TVHOME_A11Y"; fi
       sh_ settings put secure enabled_accessibility_services "$acc"; sh_ settings put secure accessibility_enabled 1;; esac
+    local fl; fl="$(sh_ settings get global vnd_tvhome_controls)"; jw "setting|global|vnd_tvhome_controls|$fl"
+    sh_ settings put global vnd_tvhome_controls 1
     ok "TV Home installed: Home opens Google TV, Home again opens the app list"
     ok "\"Head gaze\" button added to quick settings; head gaze is switched on at every boot"
     ok "floating control button enabled: Close app, Close all, Notifications, Quick settings, Volume, Head gaze"
@@ -451,6 +453,7 @@ cmd_tvhome(){ preflight; case "${1:-}" in
     sh_ cmd package set-home-activity --user 0 "$STOCK_HOME" >/dev/null; sh_ cmd statusbar remove-tile "$TVHOME_TILE" >/dev/null 2>&1
     local acc; acc="$(sh_ settings get secure enabled_accessibility_services | tr ':' '\n' | grep -v ControlService | paste -sd: -)"
     if [ -z "$acc" ]; then sh_ settings delete secure enabled_accessibility_services >/dev/null; else sh_ settings put secure enabled_accessibility_services "$acc"; fi
+    sh_ settings delete global vnd_tvhome_controls >/dev/null
     a uninstall "$TVHOME_PKG" >/dev/null 2>&1; ok "TV Home removed, stock launcher is home";;
   *) die "usage: tvhome install | uninstall";;
   esac; }

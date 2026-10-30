@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.5.1 (2026-10-30)
+
+- TV Home 1.5.1: switches its control service back on at every boot. Viture's firmware clears the list of enabled accessibility services at startup, which made the ☰ button disappear after a reboot. Other enabled services are kept; only active while the flag `vnd_tvhome_controls` is set.
+- `tvhome install` sets `vnd_tvhome_controls`; `tvhome uninstall` and the rollback remove it, so switching the service off for good means uninstalling TV Home or rolling back.
+- Upgrading from 1.5.0: run `./vnd.sh tvhome install` again.
+
 ## 1.5.0 (2026-10-29)
 
 - TV Home 1.5.0: also switches hand gestures off at every boot (Viture's firmware turns them back on), only while the flag `vnd_gestures_off` is set.
