@@ -16,7 +16,7 @@ Longer battery life, a quieter system and a microphone that only listens when yo
 4. [Before you start](#4-before-you-start)
 5. [Step-by-step guide](#5-step-by-step-guide)
 6. [The configurator](#6-the-configurator)
-7. [TV Home and head-gaze navigation](#7-tv-home-and-head-gaze-navigation) (the helper app, its permissions, signing)
+7. [TV Home and head-gaze navigation](#7-tv-home-and-head-gaze-navigation) (the helper app, its permissions, signing, [APK download](#downloading-the-apk))
 8. [Undoing changes](#8-undoing-changes)
 9. [Living with a tuned neckband](#9-living-with-a-tuned-neckband)
 10. [Using VND with Claude](#10-using-vnd-with-claude)
