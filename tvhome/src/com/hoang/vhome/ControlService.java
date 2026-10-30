@@ -447,11 +447,13 @@ public class ControlService extends AccessibilityService {
         LinearLayout cols = new LinearLayout(this);
         cols.setOrientation(LinearLayout.HORIZONTAL);
         LinearLayout left = column(0), right = column(0);
-        cols.addView(left, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1));   // as tall as the right column
-        LinearLayout.LayoutParams rp = new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1);
+        cols.addView(left, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1));
+        LinearLayout.LayoutParams rp = new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1);
         rp.setMarginStart(dp(16));
-        cols.addView(right, rp);
+        cols.addView(right, rp);   // both columns as tall as the taller one
         target.addView(cols);
+
+        // left: what happens at startup, then Wireless debugging
         target = left;
         section("At startup");
         target.addView(switchRow(Icon.GAZE_ON, "Head gaze", Prefs.getInt(this, Prefs.BOOT_GAZE, 1) == 1, on -> {
@@ -461,13 +463,18 @@ public class ControlService extends AccessibilityService {
             Prefs.putInt(this, BootReceiver.GESTURES_OFF_FLAG, on ? 0 : 1);
             Prefs.putInt(this, BootReceiver.GESTURES, on ? 1 : 0);
             return on; }), rowLp(LinearLayout.LayoutParams.MATCH_PARENT));
-        target.addView(switchRow(Icon.STARTUP, "Wireless debugging", Prefs.getInt(this, Prefs.ADB_NEXT_BOOT, 0) == 1, on -> {
-            Prefs.putInt(this, Prefs.ADB_NEXT_BOOT, on ? 1 : 0); return on; }), rowLp(LinearLayout.LayoutParams.MATCH_PARENT));
+        section("Wireless debugging");
+        target.addView(switchRow(Icon.DEBUG, "Wireless debugging", Net.adbWifiOn(this), on -> {
+            Net.setAdbWifi(this, on);
+            portTried = false;
+            if (on) h.postDelayed(this::readPortBehind, 2500);   // the port exists a moment after switching on
+            return Net.adbWifiOn(this); }), rowLp(LinearLayout.LayoutParams.MATCH_PARENT));
+        adbLine = note(adbText());
+        h.removeCallbacks(refreshAdb);
+        h.post(refreshAdb);
+        if (Net.adbWifiOn(this) && Net.adbPort() == 0 && !portTried) h.postDelayed(this::readPortBehind, 300);
 
-
-        target.addView(new View(this), new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1));   // About sits at the bottom
-        target.addView(row(Icon.INFO, "About", false, v -> pageAbout()), rowLp(LinearLayout.LayoutParams.MATCH_PARENT));
-
+        // right: controls, then About at the bottom
         target = right;
         section("Controls");
         target.addView(switchRow(Icon.SCROLL, "Edge controls", Prefs.getInt(this, Prefs.EDGE, 1) == 1, on -> {
@@ -485,18 +492,8 @@ public class ControlService extends AccessibilityService {
         sleepValue[0] = (TextView) sleep.getChildAt(1);
         target.addView(sleep, rowLp(LinearLayout.LayoutParams.MATCH_PARENT));
         target.addView(row(Icon.BUTTONS, "Buttons", false, v -> pageButtons()), rowLp(LinearLayout.LayoutParams.MATCH_PARENT));
-
-        section("Wireless debugging");
-        target.addView(switchRow(Icon.DEBUG, "Wireless debugging", Net.adbWifiOn(this), on -> {
-            Net.setAdbWifi(this, on);
-            portTried = false;
-            if (on) h.postDelayed(this::readPortBehind, 2500);   // the port exists a moment after switching on
-            return Net.adbWifiOn(this); }), rowLp(LinearLayout.LayoutParams.MATCH_PARENT));
-        adbLine = note(adbText());
-        h.removeCallbacks(refreshAdb);
-        h.post(refreshAdb);
-        if (Net.adbWifiOn(this) && Net.adbPort() == 0 && !portTried) h.postDelayed(this::readPortBehind, 300);
-
+        target.addView(new View(this), new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1));
+        target.addView(row(Icon.INFO, "About", false, v -> pageAbout()), rowLp(LinearLayout.LayoutParams.MATCH_PARENT));
     }
 
     private String adbText() {

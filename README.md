@@ -380,8 +380,8 @@ The panel stays open until you **click outside it**, **click the ☰ button agai
 |---|---|
 | **At startup: Head gaze** | On by default. Switch it off if you prefer to start without head tracking |
 | **At startup: Hand gestures** | On is Viture's default. Off switches the gesture camera off at once and keeps it off after every restart, the biggest single battery saving (the same flag `apply gestures` sets) |
-| **At startup: Wireless debugging** | Turns Wireless debugging on once, at the next restart, then switches itself off. As soon as the connection is ready, a popup shows the address and port to use with `./vnd.sh connect`. Useful because the port changes at every restart |
 | **Wireless debugging** | Switches it on or off now, and lists the neckband's addresses (Wi-Fi and VPN, such as Tailscale) with the port. Android does not let apps read the port, so TV Home briefly opens the system Wireless debugging page behind the popup, reads its "IP address & Port" line and steps back. It also picks the port up whenever you open that page yourself |
+| *(advanced)* Wireless debugging after the next restart | `adb shell settings put global vnd_adb_next_boot 1` before rebooting: TV Home turns it on once after the restart and shows the new address and port on screen |
 | **Edge controls** | On by default; see below |
 | **Sleep timer** | Off by default. Each click steps through 15, 30, 60 and 90 minutes and back to Off. When time is up, playback pauses and the screen locks, so the glasses go dark. While it runs, the ☰ panel shows the time left with a one-click cancel. It does not survive a restart |
 | **Buttons** | Remap buttons (below) |
