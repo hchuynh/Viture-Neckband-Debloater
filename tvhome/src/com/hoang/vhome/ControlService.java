@@ -461,7 +461,7 @@ public class ControlService extends AccessibilityService {
             Prefs.putInt(this, BootReceiver.GESTURES_OFF_FLAG, on ? 0 : 1);
             Prefs.putInt(this, BootReceiver.GESTURES, on ? 1 : 0);
             return on; }), rowLp(LinearLayout.LayoutParams.MATCH_PARENT));
-        target.addView(switchRow(Icon.STARTUP, "Wireless debugging at next startup", Prefs.getInt(this, Prefs.ADB_NEXT_BOOT, 0) == 1, on -> {
+        target.addView(switchRow(Icon.STARTUP, "Wireless debugging", Prefs.getInt(this, Prefs.ADB_NEXT_BOOT, 0) == 1, on -> {
             Prefs.putInt(this, Prefs.ADB_NEXT_BOOT, on ? 1 : 0); return on; }), rowLp(LinearLayout.LayoutParams.MATCH_PARENT));
 
 
