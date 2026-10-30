@@ -235,7 +235,7 @@ If anything is wrong, run `./vnd.sh rollback --last` and see [Troubleshooting](#
 ./vnd.sh tvhome install
 ```
 
-See [section 7](#7-tv-home-and-head-gaze-navigation) for how it behaves.
+See [section 7](#7-tv-home-and-head-gaze-navigation) for how it behaves. The APK is also attached to each [release](https://github.com/hchuynh/Viture-Neckband-Debloater/releases) if you want it on its own; see [Downloading the APK](#downloading-the-apk).
 
 ### Step 10: Confirm and finish
 
@@ -327,11 +327,37 @@ It has no app screen of its own (everything lives in the panel), no background a
 
 Android installs only apps that carry a digital signature. The signature does not unlock anything or grant permissions; it identifies the publisher, and Android uses it to accept an **update** only when it is signed with the same key as the installed copy. That is what stops someone from replacing your app with a modified version.
 
-- **To install the prebuilt app, you need nothing.** `tvhome/TVHome.apk` is already signed by the maintainer, and `tvhome install` installs it.
+- **To install the prebuilt app, you need nothing.** `tvhome/TVHome.apk` is already signed by the maintainer, and `tvhome install` installs it. The same file is attached to every [release](https://github.com/hchuynh/Viture-Neckband-Debloater/releases) (see [Downloading the APK](#downloading-the-apk)).
+- **The APK does not contain the private key.** It carries a signature and the maintainer's *public* certificate, which only let Android check who signed it; neither can be used to sign another app. Sharing the APK is safe.
 - **The maintainer's private key is not in this repository and never will be.** Anyone holding it could publish fake updates that Android would accept over your copy. `.gitignore` blocks key files from being committed.
 - **You can check the signature yourself.** With the Android build tools: `apksigner verify --print-certs tvhome/TVHome.apk`. The official build's certificate SHA-256 fingerprint is
   `f3b8e7b88ac32dcdf4315f0250ce0003933d1685059b45979d0dbd38cc2c4287`.
 - **If you build the app from source**, `tvhome/build.sh` creates a key of your own (`tvhome/tvhome.keystore`). Keep it if you want to update your own build later. Because your key differs from the maintainer's, Android refuses to install your build over the official one; `tvhome install` detects this, uninstalls the old copy and installs yours.
+
+### Downloading the APK
+
+Every [GitHub release](https://github.com/hchuynh/Viture-Neckband-Debloater/releases) has the matching TV Home build attached as `TVHome-<version>.apk` (for example `TVHome-1.7.0.apk` on v1.7.0). It is the same file as `tvhome/TVHome.apk` in that release's source, signed with the certificate above. Check it before installing:
+
+```bash
+apksigner verify --print-certs TVHome-1.7.0.apk | grep SHA-256
+# must print f3b8e7b88ac32dcdf4315f0250ce0003933d1685059b45979d0dbd38cc2c4287
+```
+
+**The recommended way to install it is still `./vnd.sh tvhome install`**: it installs the app, grants every permission, journals the previous home app and accessibility settings so you can roll back, and removes everything with `tvhome uninstall`.
+
+Installing the downloaded file by hand works too, but the app only becomes useful once the permissions below are granted, and nothing is journaled:
+
+```bash
+adb install -r TVHome-1.7.0.apk
+adb shell pm grant com.hoang.vhome android.permission.WRITE_SECURE_SETTINGS
+adb shell appops set com.hoang.vhome GET_USAGE_STATS allow
+adb shell appops set com.hoang.vhome SYSTEM_ALERT_WINDOW allow
+adb shell cmd package set-home-activity --user 0 com.hoang.vhome/.HomeActivity
+adb shell cmd statusbar add-tile com.hoang.vhome/.HeadGazeTile
+adb shell settings put global vnd_tvhome_controls 1
+```
+
+Then switch on **Settings → Accessibility → TV Home controls** on the neckband (or with adb, keeping any services already listed in `enabled_accessibility_services`). To go back, set the stock launcher as home in **Settings → Apps → Default apps** and uninstall TV Home.
 
 ### Why head gaze matters
 
