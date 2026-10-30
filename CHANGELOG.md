@@ -2,7 +2,7 @@
 
 ## 1.7.0 (2026-10-30)
 
-- TV Home 1.7.0, edge controls: rest the cursor on the right edge to get a thin scrollbar (click a half for one page, double-click for top or bottom, drag for continuous scrolling that speeds up with distance), plus a centred media bar while something plays. They close on a click elsewhere or 3 seconds after the cursor leaves. On by default, switchable in Settings.
+- TV Home 1.7.0, edge controls: rest the cursor on the left or right edge to get a thin scrollbar on that side (click a half for one page, double-click for top or bottom, drag for continuous scrolling that speeds up with distance), plus a centred media bar while something plays (in YouTube the skip buttons double-tap the player, since it ignores the media skip keys). They close on a click elsewhere or 3 seconds after the cursor was last on them. On by default, switchable in Settings.
 - Sleep timer (off by default): 15, 30, 60 or 90 minutes, then playback pauses and the screen locks. Time left and a cancel button appear in the panel.
 - Settings popup: "Hand gestures" is now a plain switch (on is Viture's default; off turns the camera off at once and after every restart); the debugging port is read automatically, with the system page opening behind the popup and closing again in exactly two steps; new layout with Controls (edge controls, sleep timer, buttons).
 - Back closes the panel and the popup; both also close when the app behind them changes screen.

@@ -301,7 +301,7 @@ T bloat        com.meig.logger                    # [safe] Diagnostic logger fro
 | **Head gaze and gestures at startup** | Switches Headgaze Navigation on, and hand gestures off if you chose so, at every boot | Viture's firmware resets both at each restart |
 | **Head gaze button** | A quick-settings button to switch head tracking on and off | Viture disables volume keys while head gaze is on |
 | **Floating controls** | A hidden ☰ button in the taskbar, also opened by a controller's Menu key, with Close app, Close all, Notifications, Volume, Head gaze and Settings | The plain interface relies on swipes and drags a head-gaze cursor cannot perform |
-| **Edge controls** | A scrollbar on the right edge, and a media bar while something plays | Head gaze can click but cannot drag, so long lists and pages are hard to scroll |
+| **Edge controls** | A scrollbar on the left or right edge, and a media bar while something plays | Head gaze can click but cannot drag, so long lists and pages are hard to scroll |
 | **Settings popup** | Startup choices, Wireless debugging with its address, edge controls, sleep timer, button remapping, About | Changing these otherwise needs a computer and adb |
 
 It has no app screen of its own (everything lives in the panel), no background activity beyond the startup check, **no internet permission**, no analytics, and it stores nothing.
@@ -400,15 +400,15 @@ Leave Wireless debugging off when you are not using a computer: anyone you paire
 
 ### Edge controls
 
-Head gaze can point and click but not drag, which makes long lists, web pages and settings hard to scroll. Push the cursor against the **right edge** of the screen and a thin **scrollbar** appears, set slightly in from the edge:
+Head gaze can point and click but not drag, which makes long lists, web pages and settings hard to scroll. Push the cursor against the **left or right edge** of the screen and a thin **scrollbar** appears on that side, set slightly in from the edge:
 
 - **Click** the top or bottom half to scroll one page up or down.
 - **Double-click** a half to jump to the top or the bottom.
 - **Press and drag** along it to scroll continuously; the further you drag, the faster it goes.
 
-While something is **playing**, a **media bar** also appears in the middle of the screen: previous, back 10 seconds, play/pause, forward 10 seconds, next. When nothing plays it stays hidden. Skip lengths follow each app (most use 10 seconds).
+While something is **playing**, a **media bar** also appears in the middle of the screen: previous, back 10 seconds, play/pause, forward 10 seconds, next. When nothing plays it stays hidden. In YouTube, which ignores the standard skip keys, the skip buttons double-tap the left or right part of the player, exactly as you would with a finger (10 seconds by default, adjustable in YouTube's settings); other apps get the standard media keys and choose their own skip length.
 
-Both stay open while you use them, and close on a click anywhere else or about 3 seconds after the cursor leaves them. A cursor that only sweeps past the edge does not open them: it has to rest there for a moment. Switch the feature off in Settings if you never want it. Neckband buttons cannot open them, because Viture keeps the volume buttons for itself while head gaze is on.
+Both stay open while you use them, and close on a click anywhere else or 3 seconds after the cursor was last on them. A cursor that only sweeps past the edge does not open them: it has to rest there for a moment. Switch the feature off in Settings if you never want it. Neckband buttons cannot open them, because Viture keeps the volume buttons for itself while head gaze is on.
 
 The invisible spot still answers clicks, so it works even if a cursor never sends hover events. It is the size of one taskbar button; the rest of the screen is unaffected. The icons are original line drawings made in code, so the app bundles no third-party icon set.
 

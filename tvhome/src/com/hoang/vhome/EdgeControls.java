@@ -23,8 +23,8 @@ import java.util.ArrayDeque;
 import java.util.List;
 
 /**
- * Edge controls for head gaze. Push the cursor against the right edge of the screen and a thin
- * scrollbar appears, set in from the edge. While something is playing, a media bar also appears in
+ * Edge controls for head gaze. Push the cursor against the left or right edge of the screen and a
+ * thin scrollbar appears on that side, set in from the edge. While something is playing, a media bar also appears in
  * the middle of the screen. Both stay while you use them and close on a click elsewhere, or a few
  * seconds after the cursor leaves them.
  *
@@ -37,10 +37,13 @@ final class EdgeControls {
     private final AccessibilityService s;
     private final WindowManager wm;
     private final Handler h = new Handler(Looper.getMainLooper());
-    private EdgeFrame edge, scrollBar, mediaBar;
+    private EdgeFrame edge, edgeLeft, scrollBar, mediaBar;
+    private int side = Gravity.END;   // which edge opened the scrollbar
     private int hovering = 0;   // how many of our windows the cursor is over
 
     private final Runnable open = this::open;
+    private final Runnable openLeft = () -> { side = Gravity.START; open(); };
+    private final Runnable openRight = () -> { side = Gravity.END; open(); };
     private final Runnable hideAll = this::hideAll;
 
     EdgeControls(AccessibilityService s) { this.s = s; this.wm = s.getSystemService(WindowManager.class); }
@@ -50,21 +53,28 @@ final class EdgeControls {
     // ---------------------------------------------------------------- windows
     void start() {
         if (edge != null) return;
-        // a short dwell filters a cursor that only sweeps past the edge
-        edge = new EdgeFrame(s, inside -> {
-            if (inside) { if (!isOpen() && !h.hasCallbacks(open)) h.postDelayed(open, DWELL_MS); }
-            else h.removeCallbacks(open);
+        edge = edgeHotspot(Gravity.END, openRight);
+        edgeLeft = edgeHotspot(Gravity.START, openLeft);
+    }
+
+    /** A strip a few pixels wide along one edge; a short dwell filters a cursor that only sweeps past. */
+    private EdgeFrame edgeHotspot(int gravity, Runnable opener) {
+        EdgeFrame f = new EdgeFrame(s, inside -> {
+            if (inside) { if (!isOpen() && !h.hasCallbacks(opener)) h.postDelayed(opener, DWELL_MS); }
+            else h.removeCallbacks(opener);
         });
         int top = dp(48);
         WindowManager.LayoutParams lp = params(dp(EDGE_DP), s.getResources().getDisplayMetrics().heightPixels - top - dp(80));
-        lp.gravity = Gravity.END | Gravity.TOP;
+        lp.gravity = gravity | Gravity.TOP;
         lp.y = top;
-        wm.addView(edge, lp);
+        wm.addView(f, lp);
+        return f;
     }
 
     void stop() {
         hideAll();
         if (edge != null) { try { wm.removeView(edge); } catch (Exception ignored) { } edge = null; }
+        if (edgeLeft != null) { try { wm.removeView(edgeLeft); } catch (Exception ignored) { } edgeLeft = null; }
         h.removeCallbacksAndMessages(null);
     }
 
@@ -75,12 +85,19 @@ final class EdgeControls {
         return lp;
     }
 
+    private long lastSeen = 0;   // last time the cursor was on one of the bars, or they were used
+    private final Runnable watch = this::watch;
+
+    /** Closes the bars HIDE_MS after the cursor was last on them (and nothing is being dragged). */
+    private void watch() {
+        if (!isOpen()) return;
+        if (!dragging && SystemClock.uptimeMillis() - lastSeen > HIDE_MS) { hideAll(); return; }
+        h.postDelayed(watch, 250);
+    }
+
     private EdgeFrame overlay() {
-        EdgeFrame f = new EdgeFrame(s, inside -> {
-            hovering = Math.max(0, hovering + (inside ? 1 : -1));
-            h.removeCallbacks(hideAll);
-            if (hovering == 0) h.postDelayed(hideAll, HIDE_MS);
-        });
+        EdgeFrame f = new EdgeFrame(s, inside -> lastSeen = SystemClock.uptimeMillis());
+        f.setHoverTicker(() -> lastSeen = SystemClock.uptimeMillis());
         // a click anywhere else closes both. A click on the other bar also counts as "outside" for this
         // one, so wait a moment: a press inside either bar cancels the pending close.
         f.setTouchWatcher(outside -> {
@@ -94,13 +111,12 @@ final class EdgeControls {
 
     private void open() {
         if (isOpen()) return;
-        hovering = 0;
         // thin scrollbar, set in from the right edge
         scrollBar = overlay();
         scrollBar.addView(scroller(), new FrameLayout.LayoutParams(dp(BAR_W_DP), dp(BAR_H_DP)));
         WindowManager.LayoutParams lp = params(dp(BAR_W_DP), dp(BAR_H_DP));
         lp.flags |= WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH;
-        lp.gravity = Gravity.END | Gravity.CENTER_VERTICAL;
+        lp.gravity = side | Gravity.CENTER_VERTICAL;   // on the side the cursor came from
         lp.x = dp(GAP_DP);
         wm.addView(scrollBar, lp);
 
@@ -114,9 +130,9 @@ final class EdgeControls {
             row.setPadding(dp(10), dp(8), dp(10), dp(8));
             row.setBackground(round(ControlService.POPUP & 0xE6FFFFFF, 999));
             row.addView(button(Icon.PREV, KeyEvent.KEYCODE_MEDIA_PREVIOUS), btnLp());
-            row.addView(button(Icon.REWIND, KeyEvent.KEYCODE_MEDIA_REWIND), btnLp());
+            row.addView(seekButton(Icon.REWIND, -1), btnLp());
             row.addView(button(Icon.PLAY_PAUSE, KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE), btnLp());
-            row.addView(button(Icon.FORWARD, KeyEvent.KEYCODE_MEDIA_FAST_FORWARD), btnLp());
+            row.addView(seekButton(Icon.FORWARD, 1), btnLp());
             row.addView(button(Icon.NEXT, KeyEvent.KEYCODE_MEDIA_NEXT), btnLp());
             mediaBar.addView(row);
             WindowManager.LayoutParams ml = params(WindowManager.LayoutParams.WRAP_CONTENT, WindowManager.LayoutParams.WRAP_CONTENT);
@@ -124,19 +140,20 @@ final class EdgeControls {
             ml.gravity = Gravity.CENTER;
             wm.addView(mediaBar, ml);
         }
-        h.removeCallbacks(hideAll);
-        h.postDelayed(hideAll, HIDE_MS + 1500);   // closes if the cursor never reaches them
+        lastSeen = SystemClock.uptimeMillis() + 1500;   // a little longer the first time, to reach them
+        h.removeCallbacks(watch);
+        h.post(watch);
     }
 
     void hideAll() {
-        h.removeCallbacks(open); h.removeCallbacks(hideAll); h.removeCallbacks(outsideClose);
+        h.removeCallbacks(open); h.removeCallbacks(openLeft); h.removeCallbacks(openRight); h.removeCallbacks(hideAll); h.removeCallbacks(outsideClose); h.removeCallbacks(watch);
         stopDrag();
         if (scrollBar != null) { try { wm.removeView(scrollBar); } catch (Exception ignored) { } scrollBar = null; }
         if (mediaBar != null) { try { wm.removeView(mediaBar); } catch (Exception ignored) { } mediaBar = null; }
         hovering = 0;
     }
 
-    private void keepOpen() { h.removeCallbacks(hideAll); if (hovering == 0) h.postDelayed(hideAll, HIDE_MS); }
+    private void keepOpen() { lastSeen = SystemClock.uptimeMillis(); }
 
     // ---------------------------------------------------------------- media
     private void media(int key) {
@@ -145,6 +162,49 @@ final class EdgeControls {
         am.dispatchMediaKeyEvent(new KeyEvent(t, t, KeyEvent.ACTION_DOWN, key, 0));
         am.dispatchMediaKeyEvent(new KeyEvent(t, t, KeyEvent.ACTION_UP, key, 0));
         keepOpen();
+    }
+
+    /**
+     * Skip back or forward. YouTube ignores the media skip keys, so there the button does what a finger
+     * would: a double tap on the left or right part of the player (10 seconds by default). Other apps
+     * get the standard media keys.
+     */
+    private View seekButton(int icon, int dir) {
+        View b = new IconView(s, icon, 28);
+        b.setBackground(round(ControlService.BUTTON, 999));
+        b.setOnClickListener(v -> {
+            keepOpen();
+            Rect player = youtubePlayer();
+            if (player != null) doubleTap(player.left + player.width() * (dir > 0 ? 0.85f : 0.15f), player.top + player.height() * 0.35f);
+            else media(dir > 0 ? KeyEvent.KEYCODE_MEDIA_FAST_FORWARD : KeyEvent.KEYCODE_MEDIA_REWIND);
+        });
+        return b;
+    }
+
+    private Rect youtubePlayer() {
+        for (AccessibilityWindowInfo w : s.getWindows()) {
+            if (w.getType() != AccessibilityWindowInfo.TYPE_APPLICATION) continue;
+            AccessibilityNodeInfo root = w.getRoot();
+            if (root == null || root.getPackageName() == null || !"com.google.android.youtube".contentEquals(root.getPackageName())) return null;
+            for (String id : new String[]{"com.google.android.youtube:id/watch_player", "com.google.android.youtube:id/player_view",
+                                          "com.google.android.youtube:id/player_fragment_container"}) {
+                List<AccessibilityNodeInfo> n = root.findAccessibilityNodeInfosByViewId(id);
+                for (AccessibilityNodeInfo x : n) {
+                    Rect r = new Rect(); x.getBoundsInScreen(r);
+                    if (x.isVisibleToUser() && r.width() > 200 && r.height() > 100) return r;
+                }
+            }
+            Rect r = new Rect(); root.getBoundsInScreen(r);   // full-screen video: the whole window
+            return r;
+        }
+        return null;
+    }
+
+    private void doubleTap(float x, float y) {
+        Path p = new Path(); p.moveTo(x, y);
+        s.dispatchGesture(new GestureDescription.Builder()
+            .addStroke(new GestureDescription.StrokeDescription(p, 0, 40))
+            .addStroke(new GestureDescription.StrokeDescription(p, 140, 40)).build(), null, null);
     }
 
     // ---------------------------------------------------------------- scroll
@@ -303,6 +363,8 @@ final class EdgeControls {
         interface TouchWatcher { void onTouch(boolean outside); }
         private boolean in = false;
         private TouchWatcher tw;
+        private Runnable ticker;
+        void setHoverTicker(Runnable r) { ticker = r; }
         EdgeFrame(android.content.Context c, Listener l) { super(c); this.l = l; }
         void setTouchWatcher(TouchWatcher t) { tw = t; }
         @Override public boolean dispatchTouchEvent(MotionEvent e) {
@@ -316,6 +378,7 @@ final class EdgeControls {
             int a = e.getActionMasked();
             boolean now = a == MotionEvent.ACTION_HOVER_ENTER || a == MotionEvent.ACTION_HOVER_MOVE;
             if (a == MotionEvent.ACTION_HOVER_EXIT) now = false;
+            if (now && ticker != null) ticker.run();
             if (now != in) { in = now; l.onHover(now); }
             super.dispatchHoverEvent(e);
             return true;

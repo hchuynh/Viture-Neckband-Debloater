@@ -90,12 +90,11 @@ final class Icon extends Drawable {
             case PLAY_PAUSE: {
                 fill(fg); Path t = new Path(); t.moveTo(4, 6); t.lineTo(12, 12); t.lineTo(4, 18); t.close(); c.drawPath(t, p);
                 c.drawRoundRect(new RectF(14, 6, 16.5f, 18), 1, 1, p); c.drawRoundRect(new RectF(18.5f, 6, 21, 18), 1, 1, p); break; }
-            case REWIND: case FORWARD: {   // circular arrow with "10"
-                stroke(); RectF o = new RectF(4, 4, 20, 20);
-                if (type == FORWARD) { c.drawArc(o, -60, 300, false, p); c.drawLine(18, 4, 18, 8.5f, p); c.drawLine(18, 8.5f, 13.5f, 8.5f, p); }
-                else { c.drawArc(o, -120, -300, false, p); c.drawLine(6, 4, 6, 8.5f, p); c.drawLine(6, 8.5f, 10.5f, 8.5f, p); }
-                fill(fg); p.setTextSize(7.5f); p.setTextAlign(Paint.Align.CENTER); p.setFakeBoldText(true);
-                c.drawText("10", 12, 15, p); p.setFakeBoldText(false); break; }
+            case REWIND: case FORWARD: {   // two arrowheads
+                fill(fg); Path t = new Path();
+                if (type == FORWARD) { t.moveTo(3, 6); t.lineTo(12, 12); t.lineTo(3, 18); t.close(); t.moveTo(12, 6); t.lineTo(21, 12); t.lineTo(12, 18); t.close(); }
+                else { t.moveTo(21, 6); t.lineTo(12, 12); t.lineTo(21, 18); t.close(); t.moveTo(12, 6); t.lineTo(3, 12); t.lineTo(12, 18); t.close(); }
+                c.drawPath(t, p); break; }
             case SCROLL:   // up and down arrows
                 stroke(); c.drawLine(12, 3.5f, 12, 20.5f, p); c.drawLine(8, 7.5f, 12, 3.5f, p); c.drawLine(16, 7.5f, 12, 3.5f, p);
                 c.drawLine(8, 16.5f, 12, 20.5f, p); c.drawLine(16, 16.5f, 12, 20.5f, p); break;
