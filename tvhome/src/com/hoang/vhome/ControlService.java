@@ -447,7 +447,7 @@ public class ControlService extends AccessibilityService {
         LinearLayout cols = new LinearLayout(this);
         cols.setOrientation(LinearLayout.HORIZONTAL);
         LinearLayout left = column(0), right = column(0);
-        cols.addView(left, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
+        cols.addView(left, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1));   // as tall as the right column
         LinearLayout.LayoutParams rp = new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1);
         rp.setMarginStart(dp(16));
         cols.addView(right, rp);
@@ -465,7 +465,7 @@ public class ControlService extends AccessibilityService {
             Prefs.putInt(this, Prefs.ADB_NEXT_BOOT, on ? 1 : 0); return on; }), rowLp(LinearLayout.LayoutParams.MATCH_PARENT));
 
 
-        section("More");
+        target.addView(new View(this), new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1));   // About sits at the bottom
         target.addView(row(Icon.INFO, "About", false, v -> pageAbout()), rowLp(LinearLayout.LayoutParams.MATCH_PARENT));
 
         target = right;
