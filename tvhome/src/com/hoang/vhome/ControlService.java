@@ -58,6 +58,7 @@ public class ControlService extends AccessibilityService {
 
     private ContentObserver observer;
     private EdgeControls edge;
+    private CursorHider hider;
     private long sleepAt = 0;   // uptime when the sleep timer ends, 0 = off
     static final int[] SLEEP_MIN = {0, 15, 30, 60, 90};
     private final Runnable sleepNow = this::sleepNow;
@@ -108,6 +109,9 @@ public class ControlService extends AccessibilityService {
 
     @Override public void onAccessibilityEvent(AccessibilityEvent e) {
         CharSequence pkg = e.getPackageName();
+        if (hider != null && (e.getEventType() == AccessibilityEvent.TYPE_VIEW_HOVER_ENTER
+                || e.getEventType() == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED)) hider.activity();
+        if (e.getEventType() == AccessibilityEvent.TYPE_VIEW_HOVER_ENTER) return;
         // learn the debugging port whenever the system Wireless debugging page is on screen
         if (pkg != null && "com.android.settings".contentEquals(pkg) && Net.adbWifiOn(this))
             h.postDelayed(this::scanPort, 400);
@@ -240,7 +244,7 @@ public class ControlService extends AccessibilityService {
             togglePanel();
         });
         fab.setAlpha(0f);   // invisible until the cursor moves onto its spot
-        fabFrame = new HoverFrame(this, inside -> { if (inside) reveal(); else concealSoon(); });
+        fabFrame = new HoverFrame(this, inside -> { if (hider != null) hider.activity(); if (inside) reveal(); else concealSoon(); });
         fabFrame.addView(fab, new HoverFrame.LayoutParams(dp(SIZE_DP), dp(SIZE_DP)));
         WindowManager.LayoutParams lp = params(dp(SIZE_DP), dp(SIZE_DP), 0);
         lp.gravity = Gravity.END | Gravity.BOTTOM;
@@ -249,6 +253,9 @@ public class ControlService extends AccessibilityService {
         wm.addView(fabFrame, lp);
 
         edge = new EdgeControls(this);
+        hider = new CursorHider(this);
+        edge.setOpenListener(open -> hider.setPaused(open || panel != null || popup != null));
+        setHideCursor(Prefs.getInt(this, Prefs.HIDE_CURSOR, 1) == 1);
         if (Prefs.getInt(this, Prefs.EDGE, 1) == 1) edge.start();
         if (Prefs.getInt(this, Prefs.ADB_POPUP, 0) == 1) waitForAdb(0);
     }
@@ -277,10 +284,28 @@ public class ControlService extends AccessibilityService {
         return sleepAt == 0 ? "Off" : "Ends in " + sleepLeftMin() + " min";
     }
 
+    /** Hover reports are only requested while "Hide cursor when still" is on: no cost otherwise. */
+    private void setHideCursor(boolean on) {
+        android.accessibilityservice.AccessibilityServiceInfo info = getServiceInfo();
+        if (info != null) {
+            if (on) info.eventTypes |= AccessibilityEvent.TYPE_VIEW_HOVER_ENTER;
+            else info.eventTypes &= ~AccessibilityEvent.TYPE_VIEW_HOVER_ENTER;
+            setServiceInfo(info);
+        }
+        hider.setEnabled(on);
+        updatePause();
+    }
+
+    /** Never hide the cursor while the panel, a popup or the edge bars are open. */
+    private void updatePause() {
+        if (hider != null) hider.setPaused(panel != null || popup != null || (edge != null && edge.isOpen()));
+    }
+
     @Override public void onDestroy() {
         try {
             if (observer != null) getContentResolver().unregisterContentObserver(observer);
             if (edge != null) edge.stop();
+            if (hider != null) hider.setEnabled(false);
             h.removeCallbacks(sleepNow);
             hidePopup();
             if (panel != null) wm.removeView(panel);
@@ -360,11 +385,13 @@ public class ControlService extends AccessibilityService {
         lp.x = dp(RIGHT_DP - 120);
         lp.y = dp(BOTTOM_DP + SIZE_DP + 10);
         wm.addView(panel, lp);
+        updatePause();
     }
 
     private void hidePanel() {
         if (panel != null) { try { wm.removeView(panel); } catch (Exception ignored) { } panel = null; }
         concealSoon();
+        updatePause();
     }
 
     // ------------------------------------------------------------------ settings popup
@@ -390,6 +417,7 @@ public class ControlService extends AccessibilityService {
             lp.gravity = Gravity.CENTER;
             lp.y = -dp(SIZE_DP / 2);   // sit slightly above centre, away from the taskbar
             wm.addView(popup, lp);
+            updatePause();
         }
         body.removeAllViews();
         LinearLayout head = new LinearLayout(this);
@@ -419,6 +447,7 @@ public class ControlService extends AccessibilityService {
         h.removeCallbacks(stopCapture);
         h.removeCallbacks(refreshAdb);
         if (popup != null) { try { wm.removeView(popup); } catch (Exception ignored) { } popup = null; body = null; }
+        updatePause();
     }
 
     private TextView adbLine;
@@ -471,18 +500,11 @@ public class ControlService extends AccessibilityService {
             Prefs.putInt(this, BootReceiver.GESTURES_OFF_FLAG, on ? 0 : 1);
             Prefs.putInt(this, BootReceiver.GESTURES, on ? 1 : 0);
             return on; })), cellLp());
-        section("Wireless debugging");
-        LinearLayout adb = cell(Icon.DEBUG, "Wireless debugging", adbText(), toggle(Net.adbWifiOn(this), on -> {
-            Net.setAdbWifi(this, on);
-            portTried = false;
-            if (on) h.postDelayed(this::readPortBehind, 2500);   // the port exists a moment after switching on
-            return Net.adbWifiOn(this); }));
-        adbLine = subtitleOf(adb);
-        adbLine.setAutoSizeTextTypeUniformWithConfiguration(10, 14, 1, android.util.TypedValue.COMPLEX_UNIT_SP);   // shrink rather than cut
-        target.addView(adb, cellLp());
-        h.removeCallbacks(refreshAdb);
-        h.post(refreshAdb);
-        if (Net.adbWifiOn(this) && Net.adbPort() == 0 && !portTried) h.postDelayed(this::readPortBehind, 300);
+        section("Cursor");
+        target.addView(cell(Icon.GAZE_OFF, "Hide when still", "After 5 s; moves or clicks bring it back", toggle(Prefs.getInt(this, Prefs.HIDE_CURSOR, 1) == 1, on -> {
+            Prefs.putInt(this, Prefs.HIDE_CURSOR, on ? 1 : 0);
+            setHideCursor(on);
+            return on; })), cellLp());
 
         target = right;
         section("Controls");
@@ -504,6 +526,20 @@ public class ControlService extends AccessibilityService {
         LinearLayout buttons = cell(Icon.BUTTONS, "Remap buttons", "Neckband and controller", text("\u203a", 26, ACCENT));
         buttons.setOnClickListener(v -> pageButtons());
         target.addView(buttons, cellLp());
+
+        // full width under both columns: Wireless debugging, with room for every address
+        target = body;
+        section("Wireless debugging");
+        LinearLayout adb = cell(Icon.DEBUG, "Wireless debugging", adbText(), toggle(Net.adbWifiOn(this), on -> {
+            Net.setAdbWifi(this, on);
+            portTried = false;
+            if (on) h.postDelayed(this::readPortBehind, 2500);   // the port exists a moment after switching on
+            return Net.adbWifiOn(this); }));
+        adbLine = subtitleOf(adb);
+        target.addView(adb, cellLp());
+        h.removeCallbacks(refreshAdb);
+        h.post(refreshAdb);
+        if (Net.adbWifiOn(this) && Net.adbPort() == 0 && !portTried) h.postDelayed(this::readPortBehind, 300);
     }
 
     interface Toggler { boolean set(boolean on); }

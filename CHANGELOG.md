@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.8.0 (unreleased)
+
+- TV Home 1.8.0: hide the head-gaze cursor after 5 seconds without moving (Settings, Cursor, on by default). Head tremor is tolerated: positions are smoothed and only a move beyond about 28 dp, or a quick turn, brings the cursor back. A click while hidden reveals it and is passed on to the app.
+- Media bar: pressing a button no longer closes it; the edge controls close 2 seconds after the cursor leaves them.
+- Settings: new Cursor section; Wireless debugging is a full-width row under the two columns.
+
 ## 1.7.0 (2026-10-30)
 
 - TV Home 1.7.0, edge controls: rest the cursor on the left or right edge to get a thin scrollbar on that side (click a half for one page, double-click for top or bottom, drag for continuous scrolling that speeds up with distance), plus a centred media bar while something plays (in YouTube the skip buttons double-tap the player, since it ignores the media skip keys). They close on a click elsewhere or 3 seconds after the cursor was last on them. On by default, switchable in Settings.

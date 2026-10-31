@@ -408,6 +408,7 @@ The panel stays open until you **click outside it**, **click the ☰ button agai
 | **At startup: Hand gestures** | On is Viture's default. Off switches the gesture camera off at once and keeps it off after every restart, the biggest single battery saving (the same flag `apply gestures` sets) |
 | **Wireless debugging** | Switches it on or off now; the line below shows the neckband's addresses (Wi-Fi first, then VPN such as Tailscale) and the port. Android does not let apps read the port, so TV Home briefly opens the system Wireless debugging page behind the popup, reads its "IP address & Port" line and steps back. It also picks the port up whenever you open that page yourself |
 | *(advanced)* Wireless debugging after the next restart | `adb shell settings put global vnd_adb_next_boot 1` before rebooting: TV Home turns it on once after the restart and shows the new address and port on screen |
+| **Cursor: Hide when still** | On by default; see below |
 | **Controls: Edge controls** | On by default; see below |
 | **Controls: Sleep timer** | Off by default. Each click steps through 15, 30, 60 and 90 minutes and back to Off. When time is up, playback pauses and the screen locks, so the glasses go dark. While it runs, the ☰ panel shows the time left with a one-click cancel. It does not survive a restart |
 | **Buttons: Remap buttons** | See below |
@@ -424,6 +425,14 @@ Leave Wireless debugging off when you are not using a computer: anyone you paire
 
 <p align="center"><img src="docs/img/buttons.png" alt="Button remapping" width="420"></p>
 
+### Hide the cursor when still
+
+With **Cursor → Hide when still** on (the default), the head-gaze cursor disappears after about 5 seconds without moving, so it does not sit in the middle of a film. It comes back as soon as you really move your head, or when you click.
+
+A head is never perfectly still, so "still" allows for tremor: TV Home smooths the cursor position and only counts a move when it leaves a small radius around the resting point (about 28 dp), or when the head turns quickly. A click while the cursor is hidden is not lost: TV Home brings the cursor back and passes the same tap, press or drag to the app underneath.
+
+How it works, for the curious: Android gives apps no global cursor position. Apps do report when the cursor passes over a new element, so 5 seconds without such a report means "probably still". TV Home then places an invisible full-screen layer without a pointer icon, which hides the cursor and, from then on, sees the exact position used for the tolerance above. The layer is removed the moment you move or click. Switching the option off also stops the hover reports, so it costs nothing when unused.
+
 ### Edge controls
 
 Head gaze can point and click but not drag, which makes long lists, web pages and settings hard to scroll. Push the cursor against the **left or right edge** of the screen and a thin **scrollbar** appears on that side, set slightly in from the edge:
@@ -439,7 +448,7 @@ While something is **playing**, a **media bar** also appears in the middle of th
 <p align="center"><img src="docs/img/edge-media.png" alt="The media bar: previous, back, play/pause, forward, next" width="420"></p>
  In YouTube, which ignores the standard skip keys, the skip buttons double-tap the left or right part of the player, exactly as you would with a finger (10 seconds by default, adjustable in YouTube's settings); other apps get the standard media keys and choose their own skip length.
 
-Both stay open while you use them, and close on a click anywhere else or 3 seconds after the cursor was last on them. A cursor that only sweeps past the edge does not open them: it has to rest there for a moment. Switch the feature off in Settings if you never want it. Neckband buttons cannot open them, because Viture keeps the volume buttons for itself while head gaze is on.
+Both stay open while you use them (pressing a media button never closes them), and close on a click anywhere else or 2 seconds after the cursor was last on them. A cursor that only sweeps past the edge does not open them: it has to rest there for a moment. Switch the feature off in Settings if you never want it. Neckband buttons cannot open them, because Viture keeps the volume buttons for itself while head gaze is on.
 
 The invisible spot still answers clicks, so it works even if a cursor never sends hover events. It is the size of one taskbar button; the rest of the screen is unaffected. The icons are original line drawings made in code, so the app bundles no third-party icon set.
 

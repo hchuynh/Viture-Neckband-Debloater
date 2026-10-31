@@ -32,7 +32,7 @@ import java.util.List;
  * the bottom, or press and drag along it to scroll continuously; the further you drag, the faster.
  */
 final class EdgeControls {
-    static final int EDGE_DP = 6, BAR_W_DP = 36, BAR_H_DP = 300, GAP_DP = 28, DWELL_MS = 350, HIDE_MS = 3000;
+    static final int EDGE_DP = 6, BAR_W_DP = 36, BAR_H_DP = 300, GAP_DP = 28, DWELL_MS = 350, HIDE_MS = 2000;
 
     private final AccessibilityService s;
     private final WindowManager wm;
@@ -45,6 +45,11 @@ final class EdgeControls {
     private final Runnable openLeft = () -> { side = Gravity.START; open(); };
     private final Runnable openRight = () -> { side = Gravity.END; open(); };
     private final Runnable hideAll = this::hideAll;
+
+    /** Told when the bars open or close, so the cursor is never hidden over them. */
+    interface OpenListener { void onOpen(boolean open); }
+    private OpenListener openListener;
+    void setOpenListener(OpenListener l) { openListener = l; }
 
     EdgeControls(AccessibilityService s) { this.s = s; this.wm = s.getSystemService(WindowManager.class); }
 
@@ -102,15 +107,27 @@ final class EdgeControls {
         // one, so wait a moment: a press inside either bar cancels the pending close.
         f.setTouchWatcher(outside -> {
             if (outside) { h.removeCallbacks(outsideClose); h.postDelayed(outsideClose, 150); }
-            else { h.removeCallbacks(outsideClose); keepOpen(); }
+            else { lastInsideDown = SystemClock.uptimeMillis(); h.removeCallbacks(outsideClose); keepOpen(); }
         });
         return f;
     }
 
-    private final Runnable outsideClose = this::hideAll;
+    private final Runnable outsideClose = this::closeIfOutside;
+    private long lastInsideDown = 0, ownGestureUntil = 0;
+
+    /**
+     * A click on one bar is "outside" for the other one, and the taps TV Home itself sends to the
+     * player (YouTube skip) are outside for both. Neither of those should close the controls.
+     */
+    private void closeIfOutside() {
+        long now = SystemClock.uptimeMillis();
+        if (now - lastInsideDown < 400 || now < ownGestureUntil) return;
+        hideAll();
+    }
 
     private void open() {
         if (isOpen()) return;
+        if (openListener != null) openListener.onOpen(true);
         // thin scrollbar, set in from the right edge
         scrollBar = overlay();
         scrollBar.addView(scroller(), new FrameLayout.LayoutParams(dp(BAR_W_DP), dp(BAR_H_DP)));
@@ -146,11 +163,13 @@ final class EdgeControls {
     }
 
     void hideAll() {
+        boolean wasOpen = isOpen();
         h.removeCallbacks(open); h.removeCallbacks(openLeft); h.removeCallbacks(openRight); h.removeCallbacks(hideAll); h.removeCallbacks(outsideClose); h.removeCallbacks(watch);
         stopDrag();
         if (scrollBar != null) { try { wm.removeView(scrollBar); } catch (Exception ignored) { } scrollBar = null; }
         if (mediaBar != null) { try { wm.removeView(mediaBar); } catch (Exception ignored) { } mediaBar = null; }
         hovering = 0;
+        if (wasOpen && openListener != null) openListener.onOpen(false);
     }
 
     private void keepOpen() { lastSeen = SystemClock.uptimeMillis(); }
@@ -201,6 +220,7 @@ final class EdgeControls {
     }
 
     private void doubleTap(float x, float y) {
+        ownGestureUntil = SystemClock.uptimeMillis() + 800;
         Path p = new Path(); p.moveTo(x, y);
         s.dispatchGesture(new GestureDescription.Builder()
             .addStroke(new GestureDescription.StrokeDescription(p, 0, 40))
@@ -313,6 +333,7 @@ final class EdgeControls {
     }
 
     private void swipe(int dir) {
+        ownGestureUntil = SystemClock.uptimeMillis() + 800;
         DisplayMetrics m = s.getResources().getDisplayMetrics();
         float x = m.widthPixels * 0.5f, a = m.heightPixels * 0.70f, b = m.heightPixels * 0.30f;
         Path p = new Path();
