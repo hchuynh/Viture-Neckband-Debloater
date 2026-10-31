@@ -114,6 +114,7 @@ public class ControlService extends AccessibilityService {
 
     @Override public void onAccessibilityEvent(AccessibilityEvent e) {
         CharSequence pkg = e.getPackageName();
+        if (autoGaze != null && e.getEventType() == AccessibilityEvent.TYPE_VIEW_HOVER_ENTER) autoGaze.activity();
         if (hider != null && (e.getEventType() == AccessibilityEvent.TYPE_VIEW_HOVER_ENTER
                 || e.getEventType() == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED)) hider.activity();
         if (e.getEventType() == AccessibilityEvent.TYPE_VIEW_HOVER_ENTER) return;
@@ -276,6 +277,7 @@ public class ControlService extends AccessibilityService {
     private void refreshAutoGaze() {
         int b = Profiles.bits(this, Profiles.current(this));
         if (autoGaze != null) autoGaze.configure(Profiles.has(b, Profiles.WATCH), Profiles.has(b, Profiles.PERIPHERAL));
+        if (hider != null) setHideCursor(Prefs.getInt(this, Prefs.HIDE_CURSOR, 1) == 1);   // hover reports also feed watch mode
     }
 
     private void activate(int profile) {
@@ -561,7 +563,7 @@ public class ControlService extends AccessibilityService {
     private void setHideCursor(boolean on) {
         android.accessibilityservice.AccessibilityServiceInfo info = getServiceInfo();
         if (info != null) {
-            if (on) info.eventTypes |= AccessibilityEvent.TYPE_VIEW_HOVER_ENTER;
+            if (on || (autoGaze != null && autoGaze.wantsHover())) info.eventTypes |= AccessibilityEvent.TYPE_VIEW_HOVER_ENTER;
             else info.eventTypes &= ~AccessibilityEvent.TYPE_VIEW_HOVER_ENTER;
             setServiceInfo(info);
         }

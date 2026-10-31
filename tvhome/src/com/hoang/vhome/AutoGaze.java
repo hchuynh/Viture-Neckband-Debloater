@@ -24,7 +24,7 @@ import java.util.List;
  * and back on when the last one disconnects. Android reports device changes; nothing is polled.
  */
 final class AutoGaze implements InputManager.InputDeviceListener {
-    private static final long POLL_MS = 2000;
+    private static final long POLL_MS = 2000, REARM_MS = 3000;
 
     private final AccessibilityService s;
     private final Handler h = new Handler(Looper.getMainLooper());
@@ -34,6 +34,12 @@ final class AutoGaze implements InputManager.InputDeviceListener {
     private boolean watch, peripheral;
     private boolean watchHolds, watchDismissed, peripheralHolds;
     private final Runnable poll = this::check;
+    private long lastActivity = 0;   // last time the pointer moved over something or a button was used
+
+    /** The pointer moved over something: the person is using head gaze right now. */
+    void activity() { lastActivity = android.os.SystemClock.uptimeMillis(); }
+
+    boolean wantsHover() { return watch; }
 
     AutoGaze(AccessibilityService s) {
         this.s = s;
@@ -66,9 +72,11 @@ final class AutoGaze implements InputManager.InputDeviceListener {
         boolean playing = am.isMusicActive();
         boolean full = playing && fullScreen();
         if (full) {
+            // brought back with a volume button: step aside again once the pointer rests for a few seconds
+            if (watchDismissed && android.os.SystemClock.uptimeMillis() - lastActivity >= REARM_MS) watchDismissed = false;
             if (!watchHolds && !watchDismissed && !peripheralHolds && gazeOn()) { setGaze(false); watchHolds = true; }
         } else release(false);
-        if (playing) { h.removeCallbacks(poll); h.postDelayed(poll, POLL_MS); }
+        if (playing) { h.removeCallbacks(poll); h.postDelayed(poll, watchDismissed ? 1000 : POLL_MS); }
     }
 
     /** Video left full screen or stopped: give head gaze back if watch mode took it. */
@@ -85,7 +93,8 @@ final class AutoGaze implements InputManager.InputDeviceListener {
     void volumePressed() {
         if (!watchHolds) return;
         watchHolds = false;
-        watchDismissed = true;   // not again until the video leaves full screen
+        watchDismissed = true;   // until the pointer rests again for REARM_MS
+        activity();
         setGaze(true);
     }
 
