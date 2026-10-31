@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.9.0 (2026-10-31)
+
+- TV Home 1.9.0, welcome tour: six short pages on first use (controls button, edge controls, hiding cursor, Settings, updates). Its last page asks whether to check for updates. Replay it from About.
+- Updates over the air from GitHub releases, off by default: at most one check a day; a popup offers Update, Not now or Skip this version; the Settings footer shows *Update available*. Android's own installer confirms each update and accepts only files with the same signature. New permissions: `INTERNET` (GitHub only) and `REQUEST_INSTALL_PACKAGES`; `tvhome install` grants the install appop.
+- About page rewritten: a note from the author, GitHub link, *Play tutorial again*, *Check for updates automatically*, *Check now*, and a closing quote.
+- New settings `vnd_update_check` and `vnd_onboarded`, journaled and removed with `tvhome uninstall`.
+
 ## 1.8.0 (2026-10-31)
 
 - TV Home 1.8.0: hide the head-gaze cursor after 5 seconds without moving (Settings, Cursor, on by default). Head tremor is tolerated: positions are smoothed and only a move beyond about 60 dp, or a sustained quick turn, brings the cursor back. A click while hidden reveals it and is passed on to the app.

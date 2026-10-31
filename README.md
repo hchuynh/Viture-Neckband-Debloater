@@ -303,8 +303,9 @@ T bloat        com.meig.logger                    # [safe] Diagnostic logger fro
 | **Floating controls** | A hidden ☰ button in the taskbar, also opened by a controller's Menu key, with Close app, Close all, Notifications, Volume, Head gaze and Settings | The plain interface relies on swipes and drags a head-gaze cursor cannot perform |
 | **Edge controls** | A scrollbar on the left or right edge, and a media bar while something plays | Head gaze can click but cannot drag, so long lists and pages are hard to scroll |
 | **Settings popup** | Startup choices, Wireless debugging with its address, edge controls, sleep timer, button remapping, About | Changing these otherwise needs a computer and adb |
+| **Welcome tour and updates** | A short tour on first use; optional daily check for a new version on GitHub, installed after your confirmation | Sideloaded apps get no store updates |
 
-It has no app screen of its own (everything lives in the panel), no background activity beyond the startup check, **no internet permission**, no analytics, and it stores nothing.
+It has no app screen of its own (everything lives in the panel), no background activity beyond the startup check, no analytics, and it stores nothing. Its only internet use is the optional update check, **off by default**: once a day it reads the public page of this repository's latest release on GitHub, and nothing about you or the device is sent.
 
 ### What it enables, and why
 
@@ -318,6 +319,8 @@ It has no app screen of its own (everything lives in the panel), no background a
 | **Run at startup** (`RECEIVE_BOOT_COMPLETED`) | The head-gaze check after each boot | Uninstall the app |
 | **Display over other apps** (`SYSTEM_ALERT_WINDOW`) | Letting the panel open a page while another app is in front: the Wireless debugging page (to read the port) and the GitHub link in About. Android blocks such launches from background apps otherwise | Settings → Apps → Special app access → Display over other apps |
 | **Network state** (`ACCESS_NETWORK_STATE`, granted automatically) | Showing the neckband's Wi-Fi and VPN addresses next to Wireless debugging. This is not internet access | Uninstall the app |
+| **Internet** (`INTERNET`, granted automatically) | Only the update check and download, from `api.github.com` and GitHub's release files. Nothing is contacted while *Check for updates automatically* is off, unless you press *Check now* | Switch the check off in About |
+| **Install apps** (`REQUEST_INSTALL_PACKAGES`) | Handing a downloaded update to Android's installer, which asks you to confirm and accepts only a file signed with the same key | Settings → Apps → Special app access → Install unknown apps |
 | **Accessibility service** "TV Home controls" | Drawing the controls over full-screen apps, performing the Recents swipe to close apps, opening notifications, listening for the buttons you remap, reading the port on the Wireless debugging page | Settings → Accessibility → TV Home controls |
 | **Quick-settings tile** | The Head gaze button in the pull-down panel | Edit the quick-settings panel |
 
@@ -414,7 +417,8 @@ The panel stays open until you **click outside it**, **click the ☰ button agai
 | **Controls: Edge controls** | On by default; see below |
 | **Controls: Sleep timer** | Off by default. Each click steps through 15, 30, 60 and 90 minutes and back to Off. When time is up, playback pauses and the screen locks, so the glasses go dark. While it runs, the ☰ panel shows the time left with a one-click cancel. It does not survive a restart |
 | **Buttons: Remap buttons** | See below |
-| **ⓘ** (top right) | About: version, licence, and a link to this repository |
+| **ⓘ** (top right) | About: a word from the author, a link to this repository, *Play tutorial again*, *Check for updates automatically* (off by default, also offered at the end of the tour), *Check now*, licence |
+| **Update available** (footer, right) | Appears when a newer version is known; opens the update popup |
 
 Back closes the popup, or returns to the previous page inside it. The panel and the popup also close when the app behind them changes screen, so they never stay on top of something else.
 
@@ -426,6 +430,12 @@ Leave Wireless debugging off when you are not using a computer: anyone you paire
 - The power button and the neckband mode button are handled by the system before any app sees them, so they cannot be remapped.
 
 <p align="center"><img src="docs/img/buttons.png" alt="Button remapping" width="420"></p>
+
+### Welcome tour and updates
+
+The first time TV Home runs (and once after updating to 1.9.0), a short tour explains the controls button, the edge controls, the hiding cursor and Settings. Its last page asks whether TV Home may check for updates; the answer can be changed any time in About, where the tour can also be replayed.
+
+With automatic checks on, TV Home reads the latest release of this repository on GitHub at most once a day. When a newer version exists, a popup offers **Update**, **Not now** or **Skip this version** (never asked again for that version), and the Settings footer shows *Update available* on the right. *Update* downloads `TVHome-<version>.apk` from the release and hands it to Android, which shows its own confirmation and installs the file only if it carries the same signature as the installed app. `./vnd.sh tvhome install` grants the install permission; a copy installed by hand asks once to allow installing apps.
 
 ### Hide the cursor when still
 

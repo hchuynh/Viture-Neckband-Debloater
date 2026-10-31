@@ -258,6 +258,96 @@ public class ControlService extends AccessibilityService {
         setHideCursor(Prefs.getInt(this, Prefs.HIDE_CURSOR, 1) == 1);
         if (Prefs.getInt(this, Prefs.EDGE, 1) == 1) edge.start();
         if (Prefs.getInt(this, Prefs.ADB_POPUP, 0) == 1) waitForAdb(0);
+        updater = new Updater(this);
+        if (Prefs.getInt(this, Prefs.ONBOARDED, 0) != 1) h.postDelayed(() -> { if (popup == null) pageTour(0); }, 4000);
+        h.postDelayed(updateTick, 60_000);
+    }
+
+    // ------------------------------------------------------------------ updates
+    private Updater updater;
+    private boolean installing = false;
+    private final Runnable updateTick = this::updateTick;
+
+    /** Every few hours: if automatic checks are on and a day has passed, ask GitHub once. */
+    private void updateTick() {
+        h.removeCallbacks(updateTick);
+        h.postDelayed(updateTick, 6 * 3600_000L);
+        if (!updater.autoCheck() || !updater.dueForCheck()) return;
+        updater.check((latest, apk, error) -> {
+            if (error == null && updater.shouldPrompt() && popup == null && panel == null) pageUpdate();
+        });
+    }
+
+    /** Offers the new version: Update, Not now, or Skip this version (never asked again for it). */
+    private void pageUpdate() {
+        openPopup("Update available", false, 560);
+        backTo = null;
+        h.removeCallbacks(refreshAdb);
+        TextView t = text("TV Home " + updater.latestKnown() + " is available. You have " + Updater.installed(this) + ".", 19, FG);
+        t.setPadding(dp(6), dp(10), dp(6), dp(6));
+        body.addView(t);
+        TextView status = note("It downloads from the project's GitHub releases. Android then asks you to confirm the update, "
+            + "and accepts it only if it is signed by the same developer.");
+        body.addView(row(Icon.DOWN, "Update", false, v -> {
+            if (installing) return;
+            installing = true;
+            updater.install(updater.apkKnown(), (m, failed) -> {
+                status.setText(m);
+                if (failed) installing = false;
+                else if (m.startsWith("Waiting")) h.postDelayed(() -> { installing = false; hidePopup(); }, 1500);
+            });
+        }), rowLp(LinearLayout.LayoutParams.MATCH_PARENT));
+        body.addView(row(Icon.CLOSE, "Not now", false, v -> hidePopup()), rowLp(LinearLayout.LayoutParams.MATCH_PARENT));
+        body.addView(row(Icon.NEXT, "Skip this version", false, v -> { updater.skip(updater.latestKnown()); hidePopup(); }),
+            rowLp(LinearLayout.LayoutParams.MATCH_PARENT));
+    }
+
+    // ------------------------------------------------------------------ welcome tour
+    private static final String[][] TOUR = {
+        {"Welcome to TV Home", "TV Home makes Google TV your home on the VITURE Neckband and adds a few handy controls. "
+            + "This short tour shows the main ones."},
+        {"The controls button", "Move the cursor to the bottom-right corner, next to the taskbar: a \u2630 button appears. "
+            + "It opens Close app, Close all apps, Notifications, volume, head gaze and Settings. The Menu key on a controller opens it too."},
+        {"Edge controls", "Rest the cursor on the left or right edge of the screen for a moment and a scrollbar appears. "
+            + "While something is playing, a media bar with play, pause and 10-second skips appears in the middle."},
+        {"A quiet cursor", "The cursor hides after 5 seconds without moving. Turn your head or click and it comes back. "
+            + "A long press on the neckband mode button recenters the view."},
+        {"Settings", "Settings chooses what the Home button opens (Google TV, Android home or Viture 3D), "
+            + "what starts with the glasses, the sleep timer and button remapping."},
+        {"Updates", "TV Home can check GitHub once a day for a new version and ask you before installing it. "
+            + "Only the public release page is read: nothing about you or your device is sent. You can change this later in About."},
+    };
+
+    private void pageTour(int i) {
+        Prefs.putInt(this, Prefs.ONBOARDED, 1);   // shown once; About offers it again
+        hidePanel();
+        openPopup(TOUR[i][0], i > 0, 640);
+        backTo = i > 0 ? () -> pageTour(i - 1) : null;
+        h.removeCallbacks(refreshAdb);
+        TextView step = text((i + 1) + " of " + TOUR.length, 13, DIM);
+        step.setPadding(dp(6), dp(2), 0, dp(4));
+        body.addView(step);
+        TextView t = text(TOUR[i][1], 18, FG);
+        t.setLineSpacing(0, 1.2f);
+        t.setPadding(dp(6), dp(8), dp(6), dp(14));
+        body.addView(t);
+        if (i == TOUR.length - 1) {
+            body.addView(cell(Icon.DOWN, "Check for updates automatically", "Once a day, from GitHub",
+                toggle(updater.autoCheck(), on -> { Prefs.putInt(this, Prefs.UPDATE_CHECK, on ? 1 : 0); return on; })), cellLp());
+            body.addView(row(Icon.CHECK, "Done", false, v -> { hidePopup(); h.postDelayed(updateTick, 2000); }),
+                rowLp(LinearLayout.LayoutParams.MATCH_PARENT));
+            return;
+        }
+        LinearLayout nav = new LinearLayout(this);
+        nav.setOrientation(LinearLayout.HORIZONTAL);
+        nav.addView(row(-1, "Skip tour", false, v -> pageTour(TOUR.length - 1)),
+            new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
+        LinearLayout.LayoutParams np = new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1);
+        np.setMarginStart(dp(12));
+        TextView next = row(Icon.NEXT, "Next", false, v -> pageTour(i + 1));
+        next.setTextColor(ACCENT);
+        nav.addView(next, np);
+        body.addView(nav, rowLp(LinearLayout.LayoutParams.MATCH_PARENT));
     }
 
     // ------------------------------------------------------------------ sleep timer
@@ -307,6 +397,7 @@ public class ControlService extends AccessibilityService {
             if (edge != null) edge.stop();
             if (hider != null) hider.setEnabled(false);
             h.removeCallbacks(sleepNow);
+            h.removeCallbacks(updateTick);
             hidePopup();
             if (panel != null) wm.removeView(panel);
             if (fabFrame != null) wm.removeView(fabFrame);
@@ -566,13 +657,19 @@ public class ControlService extends AccessibilityService {
 
     /** Small version label at the bottom of the settings popup. */
     private void footer() {
-        String v = "";
-        try { v = getPackageManager().getPackageInfo(getPackageName(), 0).versionName; } catch (Exception ignored) { }
-        TextView t = text("TV Home " + v, 10, DIM);
-        t.setGravity(Gravity.START);
+        LinearLayout f = new LinearLayout(this);
+        f.setOrientation(LinearLayout.HORIZONTAL);
+        f.setGravity(Gravity.CENTER_VERTICAL);
+        f.setPadding(dp(6), dp(10), dp(6), 0);
+        TextView t = text("TV Home " + Updater.installed(this), 10, DIM);
         t.setAlpha(0.7f);
-        t.setPadding(dp(6), dp(10), 0, 0);
-        body.addView(t, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+        f.addView(t, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
+        if (updater != null && updater.updateAvailable()) {   // on the right: a newer version is known
+            TextView u = text("Update available: " + updater.latestKnown() + "  \u203a", 13, ACCENT);
+            u.setOnClickListener(v -> pageUpdate());
+            f.addView(u);
+        }
+        body.addView(f, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
     }
 
     interface Toggler { boolean set(boolean on); }
@@ -726,25 +823,54 @@ public class ControlService extends AccessibilityService {
     }
 
     private void pageAbout() {
-        openPopup("About", true);
+        openPopup("About", true, 640);
         backTo = this::pageMain;
         h.removeCallbacks(refreshAdb);
-        String version = "";
-        try { version = getPackageManager().getPackageInfo(getPackageName(), 0).versionName; } catch (Exception ignored) { }
-        TextView t = text("TV Home " + version, 20, FG);
+        TextView t = text("TV Home " + Updater.installed(this), 20, FG);
         t.setTypeface(Typeface.DEFAULT_BOLD);
-        t.setPadding(dp(6), dp(10), dp(6), dp(4));
+        t.setPadding(dp(6), dp(6), dp(6), dp(6));
         body.addView(t);
-        note("Google TV as home, head gaze controls and this panel for the VITURE Neckband. "
-            + "Part of Viture Neckband Debloater, an unofficial open-source project (MIT license). "
-            + "Not affiliated with or endorsed by VITURE. No internet access, no data collected.");
-        note(REPO.replace("https://", ""));
+        String me = "Hi, I'm Hoang \u201cAetheros\u201d Huynh. I'm a technonerd and an enterprise value proposition strategist "
+            + "and I vibecoded this TV Home with \u2665 for you.";
+        android.text.SpannableString sp = new android.text.SpannableString(me);
+        int heart = me.indexOf('\u2665');
+        sp.setSpan(new android.text.style.ForegroundColorSpan(0xFFFF6F91), heart, heart + 1, 0);
+        TextView hi = text("", 17, FG);
+        hi.setText(sp);
+        hi.setLineSpacing(0, 1.2f);
+        hi.setPadding(dp(6), dp(2), dp(6), dp(12));
+        body.addView(hi);
+
         body.addView(row(Icon.INFO, "Open on GitHub", false, v -> {
             hidePopup();
             try {
                 startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(REPO)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
             } catch (Exception ignored) { }
         }), rowLp(LinearLayout.LayoutParams.MATCH_PARENT));
+        body.addView(row(Icon.PLAY_PAUSE, "Play tutorial again", false, v -> pageTour(0)), rowLp(LinearLayout.LayoutParams.MATCH_PARENT));
+        body.addView(cell(Icon.DOWN, "Check for updates automatically", "Once a day, from GitHub",
+            toggle(updater.autoCheck(), on -> { Prefs.putInt(this, Prefs.UPDATE_CHECK, on ? 1 : 0); return on; })), cellLp());
+        TextView nowValue = text(updater.updateAvailable() ? updater.latestKnown() + " available  \u203a" : "\u203a", 17, ACCENT);
+        LinearLayout now = cell(Icon.CHECK, "Check now", null, nowValue);
+        now.setOnClickListener(v -> {
+            if (updater.updateAvailable()) { pageUpdate(); return; }
+            nowValue.setText("Checking\u2026");
+            updater.check((latest, apk, error) -> {
+                if (popup == null) return;
+                if (error != null) nowValue.setText(error);
+                else if (updater.updateAvailable()) pageUpdate();
+                else nowValue.setText("You have the latest version");
+            });
+        });
+        body.addView(now, cellLp());
+
+        note("Part of Viture Neckband Debloater, an unofficial open-source project (MIT license), "
+            + "not affiliated with or endorsed by VITURE. No data is collected; the internet is used only to check GitHub for updates.");
+        TextView quote = text("\u201cHave no regrets and live a great life!\u201d", 18, FG);
+        quote.setTypeface(Typeface.create(Typeface.DEFAULT, Typeface.ITALIC));
+        quote.setGravity(Gravity.CENTER);
+        quote.setPadding(dp(6), dp(14), dp(6), dp(6));
+        body.addView(quote, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
     }
 
     /** After a startup with "Wireless debugging at next startup", show the address once it is known. */

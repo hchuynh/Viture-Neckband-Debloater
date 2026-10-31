@@ -6,7 +6,7 @@
 #  Works with bash 3.2+ (macOS default) and Linux.
 # =============================================================================
 set -u
-VERSION="1.8.0"
+VERSION="1.9.0"
 ROOT="$(cd "$(dirname "$0")" && pwd)"
 LISTS="$ROOT/lists"
 STATE="$ROOT/state"
@@ -19,7 +19,7 @@ TVHOME_PKG="com.hoang.vhome"
 TVHOME_HOME="$TVHOME_PKG/.HomeActivity"
 TVHOME_TILE="$TVHOME_PKG/.HeadGazeTile"
 TVHOME_A11Y="$TVHOME_PKG/$TVHOME_PKG.ControlService"
-TVHOME_PREFS="vnd_boot_head_gaze vnd_adb_next_boot vnd_adb_popup vnd_keymap vnd_menu_key vnd_edge_controls vnd_hide_cursor vnd_home_mode vnd_dev_mode"   # TV Home settings, removed with it
+TVHOME_PREFS="vnd_boot_head_gaze vnd_adb_next_boot vnd_adb_popup vnd_keymap vnd_menu_key vnd_edge_controls vnd_hide_cursor vnd_home_mode vnd_dev_mode vnd_update_check vnd_onboarded"   # TV Home settings, removed with it
 STOCK_HOME="com.android.launcher3/com.android.searchlauncher.SearchLauncher"
 mkdir -p "$JOURNALS" "$SNAPS" "$BACKUPS"
 
@@ -435,6 +435,7 @@ cmd_tvhome(){ preflight; case "${1:-}" in
     sh_ pm grant "$TVHOME_PKG" android.permission.WRITE_SECURE_SETTINGS
     sh_ appops set "$TVHOME_PKG" GET_USAGE_STATS allow
     sh_ appops set "$TVHOME_PKG" SYSTEM_ALERT_WINDOW allow
+    sh_ appops set "$TVHOME_PKG" REQUEST_INSTALL_PACKAGES allow   # lets the optional updater hand new versions to Android's installer
     local k v; for k in $TVHOME_PREFS; do v="$(sh_ settings get global "$k")"; jw "setting|global|$k|$v"; done
     local cur; cur="$(sh_ cmd package resolve-activity --brief -a android.intent.action.MAIN -c android.intent.category.HOME | tail -1)"
     case "$cur" in "$TVHOME_HOME"|*vhome*) cur="$STOCK_HOME";; esac

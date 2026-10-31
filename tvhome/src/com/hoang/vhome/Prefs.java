@@ -21,6 +21,8 @@ final class Prefs {
     static final String HOME_MODE = "vnd_home_mode";             // 0 (default) Google TV, 1 Android home, 2 Viture 3D home
     static final String DEV_MODE = "vnd_dev_mode";               // 1: show developer rows (Wireless debugging); 0 by default
     static final String HIDE_CURSOR = "vnd_hide_cursor";         // 1 (default): hide the cursor after 5 s without moving
+    static final String UPDATE_CHECK = "vnd_update_check";       // 1: check GitHub for a new version once a day; 0 by default
+    static final String ONBOARDED = "vnd_onboarded";             // 1: the welcome tour was shown
 
     // Button actions
     static final String A_DEFAULT = "default", A_PANEL = "panel", A_BACK = "back", A_HOME = "home",
