@@ -6,6 +6,9 @@ First stable release. Earlier releases are renumbered as 0.x (formerly 1.0 to 1.
 
 - TV Home 1.0.0, welcome tour: six short pages on first use (controls button, edge controls, hiding cursor, Settings, updates). Its last page asks whether to check for updates. Replay it from About.
 - Updates over the air from GitHub releases, off by default: at most one check a day; a popup offers Update, Not now or Skip this version; the Settings footer shows *Update available*. Android's own installer confirms each update and accepts only files with the same signature. New permissions: `INTERNET` (GitHub only) and `REQUEST_INSTALL_PACKAGES`; `tvhome install` grants the install appop.
+- Tour arrows: bouncing arrows point at the ☰ button and at both screen edges while the tour talks about them; the ☰ button stays visible on those pages.
+- Media bar: scroll up and scroll down buttons centred above and below it, for Shorts-style feeds.
+- Hide when still tolerates more head jitter: about 90 dp radius, a faster turn sustained for three samples, and stronger smoothing.
 - About page rewritten: a note from the author, GitHub link, *Play tutorial again*, *Check for updates automatically*, *Check now*, and a closing quote.
 - New signing certificate (SHA-256 `ef3dac4a…88f0`). Android treats 1.0.0 as a different publisher from the 0.x versions, so install it once with `./vnd.sh tvhome install` (it reinstalls and keeps TV Home's settings); later versions update in place.
 - New settings `vnd_update_check` and `vnd_onboarded`, journaled and removed with `tvhome uninstall`.

@@ -24,10 +24,10 @@ import android.view.WindowManager;
  */
 final class CursorHider {
     static final int STILL_MS = 5000;
-    static final float RADIUS_DP = 60f;          // movement tolerated around the resting point
-    static final float SPEED_DP_PER_S = 1500f;   // a deliberate head turn, revealed at once
-    static final int FAST_SAMPLES = 2;           // ...if it lasts this many samples in a row (one twitch is not a turn)
-    static final float SMOOTH = 0.15f;           // weight of each new sample in the smoothed position
+    static final float RADIUS_DP = 90f;          // movement tolerated around the resting point
+    static final float SPEED_DP_PER_S = 2200f;   // a deliberate head turn, revealed at once
+    static final int FAST_SAMPLES = 3;           // ...if it lasts this many samples in a row (one twitch is not a turn)
+    static final float SMOOTH = 0.10f;           // weight of each new sample in the smoothed position
 
     private final AccessibilityService s;
     private final WindowManager wm;

@@ -151,7 +151,14 @@ final class EdgeControls {
             row.addView(button(Icon.PLAY_PAUSE, KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE), btnLp());
             row.addView(seekButton(Icon.FORWARD, 1), btnLp());
             row.addView(button(Icon.NEXT, KeyEvent.KEYCODE_MEDIA_NEXT), btnLp());
-            mediaBar.addView(row);
+            // scroll up above and scroll down below, centred: next or previous clip in Shorts-style feeds
+            LinearLayout col = new LinearLayout(s);
+            col.setOrientation(LinearLayout.VERTICAL);
+            col.setGravity(Gravity.CENTER_HORIZONTAL);
+            col.addView(feedButton(Icon.UP, -1), feedLp(false));
+            col.addView(row);
+            col.addView(feedButton(Icon.DOWN, 1), feedLp(true));
+            mediaBar.addView(col);
             WindowManager.LayoutParams ml = params(WindowManager.LayoutParams.WRAP_CONTENT, WindowManager.LayoutParams.WRAP_CONTENT);
             ml.flags |= WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH;
             ml.gravity = Gravity.CENTER;
@@ -348,6 +355,23 @@ final class EdgeControls {
         b.setBackground(round(ControlService.BUTTON, 999));
         b.setOnClickListener(v -> media(key));
         return b;
+    }
+
+    /** Round scroll button for the media bar, on its own translucent pill like the bar. */
+    private View feedButton(int icon, int dir) {
+        View b = new IconView(s, icon, 28);
+        android.graphics.drawable.LayerDrawable bg = new android.graphics.drawable.LayerDrawable(new android.graphics.drawable.Drawable[]{
+            round(ControlService.POPUP & 0xE6FFFFFF, 999), round(ControlService.BUTTON, 999)});
+        bg.setLayerInset(1, dp(8), dp(8), dp(8), dp(8));
+        b.setBackground(bg);
+        b.setOnClickListener(v -> { keepOpen(); scroll(dir, true); });
+        return b;
+    }
+
+    private LinearLayout.LayoutParams feedLp(boolean below) {
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(dp(72), dp(72));
+        if (below) lp.topMargin = dp(10); else lp.bottomMargin = dp(10);
+        return lp;
     }
 
     private LinearLayout.LayoutParams btnLp() {

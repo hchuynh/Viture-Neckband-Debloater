@@ -310,19 +310,36 @@ public class ControlService extends AccessibilityService {
         {"The controls button", "Move the cursor to the bottom-right corner, next to the taskbar: a \u2630 button appears. "
             + "It opens Close app, Close all apps, Notifications, volume, head gaze and Settings. The Menu key on a controller opens it too."},
         {"Edge controls", "Rest the cursor on the left or right edge of the screen for a moment and a scrollbar appears. "
-            + "While something is playing, a media bar with play, pause and 10-second skips appears in the middle."},
+            + "While something is playing, a media bar with play, pause and 10-second skips appears in the middle, "
+            + "with buttons above and below it to jump to the previous or next clip."},
         {"A quiet cursor", "The cursor hides after 5 seconds without moving. Turn your head or click and it comes back. "
             + "A long press on the neckband mode button recenters the view."},
-        {"Settings", "Settings chooses what the Home button opens (Google TV, Android home or Viture 3D), "
+        {"Settings", "Settings is the last row of the \u2630 panel. It chooses what the Home button opens (Google TV, Android home or Viture 3D), "
             + "what starts with the glasses, the sleep timer and button remapping."},
         {"Updates", "TV Home can check GitHub once a day for a new version and ask you before installing it. "
             + "Only the public release page is read: nothing about you or your device is sent. You can change this later in About."},
     };
 
+    private TourPointer pointer;
+
+    /** Arrows towards what each tour page talks about; the hidden ☰ button is shown while pointed at. */
+    private void pointFor(int i) {
+        if (pointer == null) pointer = new TourPointer(this);
+        pointer.clear();
+        if (i == 1 || i == 4) {   // the ☰ button, bottom right next to the taskbar
+            reveal();
+            pointer.show(TourPointer.DOWN, Gravity.END | Gravity.BOTTOM, RIGHT_DP + SIZE_DP / 2 - 42, BOTTOM_DP + SIZE_DP + 2);
+        } else if (i == 2) {      // both screen edges
+            pointer.show(TourPointer.LEFT, Gravity.START | Gravity.CENTER_VERTICAL, 4, 0);
+            pointer.show(TourPointer.RIGHT, Gravity.END | Gravity.CENTER_VERTICAL, 4, 0);
+        }
+    }
+
     private void pageTour(int i) {
         Prefs.putInt(this, Prefs.ONBOARDED, 1);   // shown once; About offers it again
         hidePanel();
         openPopup(TOUR[i][0], i > 0, 640);
+        pointFor(i);
         backTo = i > 0 ? () -> pageTour(i - 1) : null;
         h.removeCallbacks(refreshAdb);
         TextView step = text((i + 1) + " of " + TOUR.length, 13, DIM);
@@ -548,6 +565,7 @@ public class ControlService extends AccessibilityService {
     private void pageBack() { if (backTo != null) backTo.run(); }
 
     private void hidePopup() {
+        if (pointer != null) pointer.clear();
         capturing = false;
         h.removeCallbacks(stopCapture);
         h.removeCallbacks(refreshAdb);

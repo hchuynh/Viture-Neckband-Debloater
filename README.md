@@ -433,7 +433,7 @@ Leave Wireless debugging off when you are not using a computer: anyone you paire
 
 ### Welcome tour and updates
 
-The first time TV Home runs (and once after updating to 1.0.0), a short tour explains the controls button, the edge controls, the hiding cursor and Settings. Its last page asks whether TV Home may check for updates; the answer can be changed any time in About, where the tour can also be replayed.
+The first time TV Home runs (and once after updating to 1.0.0), a short tour explains the controls button, the edge controls, the hiding cursor and Settings, with bouncing arrows pointing at the ☰ button and at the screen edges as it talks about them. Its last page asks whether TV Home may check for updates; the answer can be changed any time in About, where the tour can also be replayed.
 
 With automatic checks on, TV Home reads the latest release of this repository on GitHub at most once a day. When a newer version exists, a popup offers **Update**, **Not now** or **Skip this version** (never asked again for that version), and the Settings footer shows *Update available* on the right. *Update* downloads `TVHome-<version>.apk` from the release and hands it to Android, which shows its own confirmation and installs the file only if it carries the same signature as the installed app. `./vnd.sh tvhome install` grants the install permission; a copy installed by hand asks once to allow installing apps.
 
@@ -441,7 +441,7 @@ With automatic checks on, TV Home reads the latest release of this repository on
 
 With **Cursor → Hide when still** on (the default), the head-gaze cursor disappears after about 5 seconds without moving, so it does not sit in the middle of a film. It comes back as soon as you really move your head, or when you click.
 
-A head is never perfectly still, so "still" allows for tremor: TV Home smooths the cursor position and only counts a move when it leaves a radius of about 60 dp around the resting point, or when the head turns quickly (fast for at least two cursor samples in a row, so a single twitch does not count). A click while the cursor is hidden is not lost: TV Home brings the cursor back and passes the same tap, press or drag to the app underneath.
+A head is never perfectly still, so "still" allows for tremor: TV Home smooths the cursor position and only counts a move when it leaves a radius of about 90 dp around the resting point, or when the head turns quickly (fast for at least three cursor samples in a row, so a twitch does not count). A click while the cursor is hidden is not lost: TV Home brings the cursor back and passes the same tap, press or drag to the app underneath.
 
 How it works, for the curious: Android gives apps no global cursor position. Apps do report when the cursor passes over a new element, so 5 seconds without such a report means "probably still". TV Home then places an invisible full-screen layer without a pointer icon, which hides the cursor and, from then on, sees the exact position used for the tolerance above. The layer is removed the moment you move or click. Switching the option off also stops the hover reports, so it costs nothing when unused.
 
@@ -471,7 +471,7 @@ It scrolls the largest scrollable area of the app in front, so it works in lists
 
 <p align="center"><img src="docs/img/edge-media.png" alt="The media bar: previous, back, play/pause, forward, next" width="420"></p>
 
-Previous, skip back, play/pause, skip forward, next. When nothing plays it stays hidden. In YouTube, which ignores the standard skip keys, the skip buttons double-tap the left or right part of the player, exactly as you would with a finger (10 seconds by default, adjustable in YouTube's settings); other apps get the standard media keys and choose their own skip length.
+Previous, skip back, play/pause, skip forward, next, with a **scroll up** button centred above the bar and a **scroll down** button below it: in YouTube Shorts and similar feeds they move to the previous or next clip without leaving the media controls (the bar picture predates them). When nothing plays it stays hidden. In YouTube, which ignores the standard skip keys, the skip buttons double-tap the left or right part of the player, exactly as you would with a finger (10 seconds by default, adjustable in YouTube's settings); other apps get the standard media keys and choose their own skip length.
 
 Both stay open while you use them (pressing a media button never closes them), and close on a click anywhere else or 2 seconds after the cursor was last on them. A cursor that only sweeps past the edge does not open them: it has to rest there for a moment. Switch the feature off in Settings if you never want it. Neckband buttons cannot open them, because Viture keeps the volume buttons for itself while head gaze is on.
 
