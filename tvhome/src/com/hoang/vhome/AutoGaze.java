@@ -50,8 +50,16 @@ final class AutoGaze implements InputManager.InputDeviceListener {
     void configure(boolean watch, boolean peripheral) {
         if (watch != this.watch) {
             this.watch = watch;
-            if (watch) { am.registerAudioPlaybackCallback(playback, h); check(); }
-            else { am.unregisterAudioPlaybackCallback(playback); h.removeCallbacks(poll); release(true); }
+            if (watch) {
+                am.registerAudioPlaybackCallback(playback, h);
+                s.getContentResolver().registerContentObserver(android.provider.Settings.Global.getUriFor(HeadGazeTile.KEY), false, gazeObserver);
+                check();
+            } else {
+                am.unregisterAudioPlaybackCallback(playback);
+                s.getContentResolver().unregisterContentObserver(gazeObserver);
+                h.removeCallbacks(poll);
+                release(true);
+            }
         }
         if (peripheral != this.peripheral) {
             this.peripheral = peripheral;
@@ -63,7 +71,32 @@ final class AutoGaze implements InputManager.InputDeviceListener {
     void stop() { configure(false, false); }
 
     private boolean gazeOn() { return Prefs.getInt(s, HeadGazeTile.KEY, 0) == 1; }
-    private void setGaze(boolean on) { Prefs.putInt(s, HeadGazeTile.KEY, on ? 1 : 0); }
+    private long ownWriteUntil = 0;
+    private void setGaze(boolean on) {
+        ownWriteUntil = android.os.SystemClock.uptimeMillis() + 800;
+        Prefs.putInt(s, HeadGazeTile.KEY, on ? 1 : 0);
+    }
+
+    /**
+     * Head gaze was switched on by the person (panel, tile, mode button): give them the same grace as
+     * a volume button, so watch mode waits until the pointer rests again.
+     */
+    void gazeChanged() {
+        if (!watch || android.os.SystemClock.uptimeMillis() < ownWriteUntil || !gazeOn()) return;
+        watchHolds = false;
+        watchDismissed = true;
+        activity();
+        h.removeCallbacks(poll);
+        h.postDelayed(poll, 1000);
+    }
+
+    private final GazeObserver gazeObserver = new GazeObserver(this);
+
+    static final class GazeObserver extends android.database.ContentObserver {
+        private final AutoGaze g;
+        GazeObserver(AutoGaze g) { super(new Handler(Looper.getMainLooper())); this.g = g; }
+        @Override public void onChange(boolean self) { g.gazeChanged(); }
+    }
 
     // ---------------------------------------------------------------- watch mode
     void playbackChanged() { h.removeCallbacks(poll); check(); }

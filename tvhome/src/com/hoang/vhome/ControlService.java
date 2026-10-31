@@ -330,12 +330,12 @@ public class ControlService extends AccessibilityService {
         int active = Profiles.current(this);
         for (int p = 0; p < Profiles.CUSTOM; p++) {
             final int fp = p;
-            body.addView(profileRow(p, active, v -> { activate(fp); pageProfiles(); }, null), rowLp(LinearLayout.LayoutParams.MATCH_PARENT));
+            body.addView(profileRow(p, active, v -> { activate(fp); hidePopup(); }, null), rowLp(LinearLayout.LayoutParams.MATCH_PARENT));
         }
         TextView edit = text(active == Profiles.CUSTOM ? "\u2713  Edit \u203a" : "Edit \u203a", 17, ACCENT);
         edit.setPadding(dp(12), dp(8), dp(4), dp(8));
         edit.setOnClickListener(v -> pageCustom());
-        body.addView(profileRow(Profiles.CUSTOM, active, v -> { activate(Profiles.CUSTOM); pageProfiles(); }, edit),
+        body.addView(profileRow(Profiles.CUSTOM, active, v -> { activate(Profiles.CUSTOM); hidePopup(); }, edit),
             rowLp(LinearLayout.LayoutParams.MATCH_PARENT));
         note("Choosing a profile sets head gaze and hand gestures now and at every startup, and switches Wi-Fi and Bluetooth once.");
     }
@@ -356,7 +356,7 @@ public class ControlService extends AccessibilityService {
         TextView save = row(Icon.CHECK, "Save and activate", false, v -> {
             Profiles.saveCustom(this, customDraft);
             activate(Profiles.CUSTOM);
-            pageProfiles();
+            hidePopup();
         });
         save.setTextColor(ACCENT);
         body.addView(save, rowLp(LinearLayout.LayoutParams.MATCH_PARENT));
