@@ -435,7 +435,10 @@ Leave Wireless debugging off when you are not using a computer: anyone you paire
 
 The first time TV Home runs (and once after updating to 1.0.0), a short tour explains the controls button, the edge controls, the hiding cursor and Settings, with bouncing arrows pointing at the ☰ button and at the screen edges as it talks about them. Its last page asks whether TV Home may check for updates; the answer can be changed any time in About, where the tour can also be replayed.
 
-With automatic checks on, TV Home reads the latest release of this repository on GitHub at most once a day. When a newer version exists, a popup offers **Update**, **Not now** or **Skip this version** (never asked again for that version), and the Settings footer shows *Update available* on the right. *Update* downloads `TVHome-<version>.apk` from the release and hands it to Android, which shows its own confirmation and installs the file only if it carries the same signature as the installed app. `./vnd.sh tvhome install` grants the install permission; a copy installed by hand asks once to allow installing apps.
+With automatic checks on, TV Home reads the latest release of this repository on GitHub at most once a day. When a newer version exists, a popup offers **Download from GitHub**, **Install here**, **Not now** or **Skip this version** (never asked again for that version), and the Settings footer shows *Update available* on the right.
+
+- **Download from GitHub** opens the release page in the browser; open the downloaded `TVHome-<version>.apk` to install it, or run `./vnd.sh tvhome install` from a computer.
+- **Install here** downloads the APK and hands it to Android's installer, which asks you to confirm and accepts only a file signed with the same key. It works only while **Google Play Protect** scanning is off: Play Protect blocks an app with an accessibility service from installing its own update (it reports it as a harmful app), so with Play Protect on, TV Home greys this button out and explains why. Switching Play Protect off is your call and your risk; switch it back on after updating. `./vnd.sh tvhome install` grants the install permission; a copy installed by hand asks once to allow installing apps.
 
 ### Hide the cursor when still
 

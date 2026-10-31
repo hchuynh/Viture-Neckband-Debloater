@@ -5,7 +5,7 @@
 First stable release. Earlier releases are renumbered as 0.x (formerly 1.0 to 1.8): v1.4.0 → v0.5.0, v1.5.0 → v0.6.0, v1.6.0 → v0.7.0, v1.7.0 → v0.8.0, v1.8.0 → v0.9.0.
 
 - TV Home 1.0.0, welcome tour: six short pages on first use (controls button, edge controls, hiding cursor, Settings, updates). Its last page asks whether to check for updates. Replay it from About.
-- Updates over the air from GitHub releases, off by default: at most one check a day; a popup offers Update, Not now or Skip this version; the Settings footer shows *Update available*. Android's own installer confirms each update and accepts only files with the same signature. New permissions: `INTERNET` (GitHub only) and `REQUEST_INSTALL_PACKAGES`; `tvhome install` grants the install appop.
+- Update checks from GitHub releases, off by default: at most one check a day; a popup offers Download from GitHub, Install here, Not now or Skip this version; the Settings footer shows *Update available*. Install here hands the APK to Android's installer (same signature only) and works only with Google Play Protect scanning off, since Play Protect blocks accessibility apps that update themselves; with it on, the popup says so and points to GitHub. New permissions: `INTERNET` (GitHub only) and `REQUEST_INSTALL_PACKAGES`; `tvhome install` grants the install appop.
 - Tour arrows: bouncing arrows point at the ☰ button and at both screen edges while the tour talks about them; the ☰ button stays visible on those pages.
 - Media bar: scroll up and scroll down buttons centred above and below it, for Shorts-style feeds.
 - Hide when still tolerates more head jitter: about 90 dp radius, a faster turn sustained for three samples, and stronger smoothing.

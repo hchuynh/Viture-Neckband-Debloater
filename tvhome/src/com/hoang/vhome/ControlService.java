@@ -279,16 +279,42 @@ public class ControlService extends AccessibilityService {
     }
 
     /** Offers the new version: Update, Not now, or Skip this version (never asked again for it). */
+    /** Google Play Protect scans every install; it blocks an app with an accessibility service from updating itself. */
+    private boolean playProtectOn() {
+        return Settings.Global.getInt(getContentResolver(), "package_verifier_user_consent", 1) == 1;
+    }
+
+    /**
+     * Offers the new version. Download from GitHub always works; installing inside TV Home works only while
+     * Play Protect is off, because Play Protect blocks accessibility apps that install their own updates.
+     */
     private void pageUpdate() {
-        openPopup("Update available", false, 560);
+        openPopup("Update available", false, 600);
         backTo = null;
         h.removeCallbacks(refreshAdb);
         TextView t = text("TV Home " + updater.latestKnown() + " is available. You have " + Updater.installed(this) + ".", 19, FG);
         t.setPadding(dp(6), dp(10), dp(6), dp(6));
         body.addView(t);
-        TextView status = note("It downloads from the project's GitHub releases. Android then asks you to confirm the update, "
-            + "and accepts it only if it is signed by the same developer.");
-        body.addView(row(Icon.DOWN, "Update", false, v -> {
+        boolean pp = playProtectOn();
+        TextView status = note(pp
+            ? "Google Play Protect is on, so TV Home cannot install the update itself: Play Protect blocks apps with "
+              + "an accessibility service from updating themselves. Download it from GitHub and open the file, or run "
+              + "./vnd.sh tvhome install from a computer. To update here instead, switch off \u201cScan apps with Play Protect\u201d "
+              + "in the Play Store (profile \u203a Play Protect \u203a settings) at your own risk, and switch it back on afterwards."
+            : "Android asks you to confirm the update and accepts it only if it is signed by the same developer.");
+        body.addView(row(Icon.DOWN, "Download from GitHub", false, v -> {
+            hidePopup();
+            try {
+                startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(REPO + "/releases/tag/v" + updater.latestKnown()))
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+            } catch (Exception ignored) { }
+        }), rowLp(LinearLayout.LayoutParams.MATCH_PARENT));
+        TextView install = row(Icon.CHECK, pp ? "Install here (needs Play Protect off)" : "Install here", false, v -> {
+            if (playProtectOn()) {
+                status.setText("Play Protect is still on: it would block the update. Use Download from GitHub, "
+                    + "or switch Play Protect scanning off first.");
+                return;
+            }
             if (installing) return;
             installing = true;
             updater.install(updater.apkKnown(), (m, failed) -> {
@@ -296,7 +322,9 @@ public class ControlService extends AccessibilityService {
                 if (failed) installing = false;
                 else if (m.startsWith("Waiting")) h.postDelayed(() -> { installing = false; hidePopup(); }, 1500);
             });
-        }), rowLp(LinearLayout.LayoutParams.MATCH_PARENT));
+        });
+        if (pp) install.setAlpha(0.55f);
+        body.addView(install, rowLp(LinearLayout.LayoutParams.MATCH_PARENT));
         body.addView(row(Icon.CLOSE, "Not now", false, v -> hidePopup()), rowLp(LinearLayout.LayoutParams.MATCH_PARENT));
         body.addView(row(Icon.NEXT, "Skip this version", false, v -> { updater.skip(updater.latestKnown()); hidePopup(); }),
             rowLp(LinearLayout.LayoutParams.MATCH_PARENT));
@@ -316,8 +344,9 @@ public class ControlService extends AccessibilityService {
             + "A long press on the neckband mode button recenters the view."},
         {"Settings", "Settings is the last row of the \u2630 panel. It chooses what the Home button opens (Google TV, Android home or Viture 3D), "
             + "what starts with the glasses, the sleep timer and button remapping."},
-        {"Updates", "TV Home can check GitHub once a day for a new version and ask you before installing it. "
-            + "Only the public release page is read: nothing about you or your device is sent. You can change this later in About."},
+        {"Updates", "TV Home can check GitHub once a day for a new version and tell you when one is out. "
+            + "Only the public release page is read: nothing about you or your device is sent. You can change this later in About. "
+            + "With Google Play Protect on, updates are downloaded from GitHub rather than installed by TV Home."},
     };
 
     private TourPointer pointer;
