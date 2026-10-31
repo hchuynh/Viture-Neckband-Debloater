@@ -13,7 +13,7 @@ final class Icon extends Drawable {
     static final int MENU = 0, CLOSE = 1, CLOSE_ALL = 2, NOTIFICATIONS = 3, QUICK_SETTINGS = 4,
                      VOLUME_DOWN = 5, VOLUME_UP = 6, GAZE_ON = 7, GAZE_OFF = 8,
                      SETTINGS = 9, INFO = 10, BUTTONS = 11, DEBUG = 12, BACK = 13, STARTUP = 14, CHECK = 15,
-                     UP = 16, DOWN = 17, PREV = 18, NEXT = 19, PLAY_PAUSE = 20, REWIND = 21, FORWARD = 22, SCROLL = 23, MUSIC = 24, TIMER = 25, HAND = 26;
+                     UP = 16, DOWN = 17, PREV = 18, NEXT = 19, PLAY_PAUSE = 20, REWIND = 21, FORWARD = 22, SCROLL = 23, MUSIC = 24, TIMER = 25, HAND = 26, HOME = 27;
     private final int type, fg, bg;
     private final Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
 
@@ -112,6 +112,12 @@ final class Icon extends Drawable {
                 hp.moveTo(16, 11.5f); hp.quadTo(18.5f, 9, 19.5f, 11.5f); hp.lineTo(16.5f, 18); hp.quadTo(15, 21, 11.5f, 21);
                 hp.quadTo(7, 21, 7, 16); hp.lineTo(7, 12);
                 c.drawPath(hp, p); break; }
+            case HOME: {   // house
+                stroke(); Path hs = new Path();
+                hs.moveTo(3.5f, 11.5f); hs.lineTo(12, 4); hs.lineTo(20.5f, 11.5f);
+                hs.moveTo(6, 9.5f); hs.lineTo(6, 20); hs.lineTo(18, 20); hs.lineTo(18, 9.5f);
+                hs.moveTo(10, 20); hs.lineTo(10, 14.5f); hs.lineTo(14, 14.5f); hs.lineTo(14, 20);
+                c.drawPath(hs, p); break; }
             case CHECK:
                 stroke(); c.drawLine(5, 12.5f, 10, 17.5f, p); c.drawLine(10, 17.5f, 19.5f, 7, p); break;
             case STARTUP: {   // power symbol

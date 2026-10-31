@@ -18,6 +18,7 @@ final class Prefs {
     static final String LEGACY_MENU_KEY = "vnd_menu_key";        // 1.4/1.5 setting, still honoured if KEYMAP is unset
     static final String ADB_WIFI = "adb_wifi_enabled";
     static final String EDGE = "vnd_edge_controls";              // 1 (default): edge scrollbar and media bar
+    static final String HOME_MODE = "vnd_home_mode";             // 0 (default): Home opens Google TV first; 1: the Android home first
     static final String HIDE_CURSOR = "vnd_hide_cursor";         // 1 (default): hide the cursor after 5 s without moving
 
     // Button actions

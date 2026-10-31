@@ -8,7 +8,10 @@ import android.os.Bundle;
 import android.os.SystemClock;
 import android.provider.Settings;
 
-/** Home toggle: Home opens Google TV; Home while Google TV is in front opens the stock launcher. */
+/**
+ * Home toggle. Home opens the chosen home (Google TV by default, or the Android home); Home while
+ * that one is already in front opens the other. The choice is set in TV Home settings.
+ */
 public class HomeActivity extends Activity {
     static final String GTV = "com.google.android.videos";
     static final ComponentName LAUNCHER =
@@ -27,7 +30,10 @@ public class HomeActivity extends Activity {
         long now = SystemClock.elapsedRealtime();
         String fg = lastForeground();
         // Without usage access, fall back to a double press within 2.5 s.
-        boolean toLauncher = (fg != null) ? GTV.equals(fg) : (now - lastPress) < 2500;
+        boolean androidFirst = Prefs.getInt(this, Prefs.HOME_MODE, 0) == 1;
+        String primary = androidFirst ? LAUNCHER.getPackageName() : GTV;
+        boolean primaryInFront = (fg != null) ? primary.equals(fg) : (now - lastPress) < 2500;
+        boolean toLauncher = androidFirst != primaryInFront;   // the chosen home, or the other one if it is already in front
         lastPress = now;
         Intent i = null;
         if (!toLauncher) i = getPackageManager().getLaunchIntentForPackage(GTV);

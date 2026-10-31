@@ -489,6 +489,11 @@ public class ControlService extends AccessibilityService {
         LinearLayout.LayoutParams rp = new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1);
         rp.setMarginStart(dp(16));
         cols.addView(right, rp);
+        // first, full width: which home the Home button opens
+        LinearLayout home = cell(Icon.HOME, "Home button opens", null, segmented(
+            new String[]{"Google TV", "Android home"}, Prefs.getInt(this, Prefs.HOME_MODE, 0),
+            i -> Prefs.putInt(this, Prefs.HOME_MODE, i)));
+        target.addView(home, cellLp());
         target.addView(cols);
 
         target = left;
@@ -565,10 +570,13 @@ public class ControlService extends AccessibilityService {
         texts.setPaddingRelative(dp(22), 0, dp(10), 0);
         TextView t = text(title, 19, FG);
         t.setSingleLine(true);
-        TextView sub = text(subtitle, 14, DIM);
-        sub.setSingleLine(true);
-        sub.setEllipsize(android.text.TextUtils.TruncateAt.END);
-        texts.addView(t); texts.addView(sub);
+        texts.addView(t);
+        if (subtitle != null) {
+            TextView sub = text(subtitle, 14, DIM);
+            sub.setSingleLine(true);
+            sub.setEllipsize(android.text.TextUtils.TruncateAt.END);
+            texts.addView(sub);
+        }
         r.addView(texts, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
         if (right instanceof Toggle) {
             r.addView(right, new LinearLayout.LayoutParams(dp(46), dp(26)));
@@ -577,6 +585,35 @@ public class ControlService extends AccessibilityService {
             r.setOnClickListener(v -> { state[0] = ((Toggler) tg.getTag()).set(!state[0]); tg.set(state[0]); });
         } else if (right != null) r.addView(right);
         return r;
+    }
+
+    interface Choice { void chosen(int index); }
+
+    /** A two-or-more option bar; the selected option is filled with the accent colour. */
+    private LinearLayout segmented(String[] options, int selected, Choice choice) {
+        LinearLayout bar = new LinearLayout(this);
+        bar.setOrientation(LinearLayout.HORIZONTAL);
+        bar.setPadding(dp(4), dp(4), dp(4), dp(4));
+        bar.setBackground(round(0xFF1C2340, 999));
+        final TextView[] items = new TextView[options.length];
+        for (int i = 0; i < options.length; i++) {
+            final int idx = i;
+            TextView t = text(options[i], 16, FG);
+            t.setGravity(Gravity.CENTER);
+            t.setPadding(dp(18), dp(8), dp(18), dp(8));
+            t.setOnClickListener(v -> {
+                for (int k = 0; k < items.length; k++) {
+                    items[k].setBackground(k == idx ? round(ACCENT, 999) : null);
+                    items[k].setTextColor(k == idx ? 0xFF0F1426 : FG);
+                }
+                choice.chosen(idx);
+            });
+            t.setBackground(i == selected ? round(ACCENT, 999) : null);
+            t.setTextColor(i == selected ? 0xFF0F1426 : FG);
+            items[i] = t;
+            bar.addView(t);
+        }
+        return bar;
     }
 
     private TextView subtitleOf(LinearLayout cell) { return (TextView) ((LinearLayout) cell.getChildAt(1)).getChildAt(1); }

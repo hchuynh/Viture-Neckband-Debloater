@@ -19,7 +19,7 @@ TVHOME_PKG="com.hoang.vhome"
 TVHOME_HOME="$TVHOME_PKG/.HomeActivity"
 TVHOME_TILE="$TVHOME_PKG/.HeadGazeTile"
 TVHOME_A11Y="$TVHOME_PKG/$TVHOME_PKG.ControlService"
-TVHOME_PREFS="vnd_boot_head_gaze vnd_adb_next_boot vnd_adb_popup vnd_keymap vnd_menu_key vnd_edge_controls vnd_hide_cursor"   # TV Home settings, removed with it
+TVHOME_PREFS="vnd_boot_head_gaze vnd_adb_next_boot vnd_adb_popup vnd_keymap vnd_menu_key vnd_edge_controls vnd_hide_cursor vnd_home_mode"   # TV Home settings, removed with it
 STOCK_HOME="com.android.launcher3/com.android.searchlauncher.SearchLauncher"
 mkdir -p "$JOURNALS" "$SNAPS" "$BACKUPS"
 

@@ -367,8 +367,8 @@ The plain Android interface has no pointer for the neckband buttons, which is wh
 
 | You do | Result |
 |---|---|
-| Press Home from any app or from the app list | Google TV opens |
-| Press Home while Google TV is in front | The stock app list opens |
+| Press Home from any app or from the app list | Google TV opens (or the Android home, if you chose it under **Home button opens**) |
+| Press Home while that home is already in front | The other one opens |
 | Press Back out of Google TV | The stock app list opens |
 | Restart the neckband | It starts in Google TV, with head gaze on (and gestures off if you chose so) |
 | Single press on the neckband Settings key | Viture's 3D home, unchanged |
@@ -404,6 +404,7 @@ The panel stays open until you **click outside it**, **click the ☰ button agai
 
 | Setting | What it does |
 |---|---|
+| **Home button opens** | *Google TV* (default) or *Android home*. Home opens the one you choose; pressing Home again while it is in front opens the other |
 | **At startup: Head gaze** | On by default. Switch it off if you prefer to start without head tracking |
 | **At startup: Hand gestures** | On is Viture's default. Off switches the gesture camera off at once and keeps it off after every restart, the biggest single battery saving (the same flag `apply gestures` sets) |
 | **Wireless debugging** | Switches it on or off now; the line below shows the neckband's addresses (Wi-Fi first, then VPN such as Tailscale) and the port. Android does not let apps read the port, so TV Home briefly opens the system Wireless debugging page behind the popup, reads its "IP address & Port" line and steps back. It also picks the port up whenever you open that page yourself |
