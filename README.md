@@ -431,7 +431,7 @@ Leave Wireless debugging off when you are not using a computer: anyone you paire
 
 With **Cursor → Hide when still** on (the default), the head-gaze cursor disappears after about 5 seconds without moving, so it does not sit in the middle of a film. It comes back as soon as you really move your head, or when you click.
 
-A head is never perfectly still, so "still" allows for tremor: TV Home smooths the cursor position and only counts a move when it leaves a small radius around the resting point (about 28 dp), or when the head turns quickly. A click while the cursor is hidden is not lost: TV Home brings the cursor back and passes the same tap, press or drag to the app underneath.
+A head is never perfectly still, so "still" allows for tremor: TV Home smooths the cursor position and only counts a move when it leaves a radius of about 60 dp around the resting point, or when the head turns quickly (fast for at least two cursor samples in a row, so a single twitch does not count). A click while the cursor is hidden is not lost: TV Home brings the cursor back and passes the same tap, press or drag to the app underneath.
 
 How it works, for the curious: Android gives apps no global cursor position. Apps do report when the cursor passes over a new element, so 5 seconds without such a report means "probably still". TV Home then places an invisible full-screen layer without a pointer icon, which hides the cursor and, from then on, sees the exact position used for the tolerance above. The layer is removed the moment you move or click. Switching the option off also stops the hover reports, so it costs nothing when unused.
 

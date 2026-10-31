@@ -24,9 +24,10 @@ import android.view.WindowManager;
  */
 final class CursorHider {
     static final int STILL_MS = 5000;
-    static final float RADIUS_DP = 28f;          // movement tolerated around the resting point
-    static final float SPEED_DP_PER_S = 700f;    // a deliberate head turn, revealed at once
-    static final float SMOOTH = 0.25f;           // weight of each new sample in the smoothed position
+    static final float RADIUS_DP = 60f;          // movement tolerated around the resting point
+    static final float SPEED_DP_PER_S = 1500f;   // a deliberate head turn, revealed at once
+    static final int FAST_SAMPLES = 2;           // ...if it lasts this many samples in a row (one twitch is not a turn)
+    static final float SMOOTH = 0.15f;           // weight of each new sample in the smoothed position
 
     private final AccessibilityService s;
     private final WindowManager wm;
@@ -37,6 +38,7 @@ final class CursorHider {
     private float ax, ay, sx, sy, lx, ly;   // anchor, smoothed, last raw
     private long lt;
     private boolean anchored;
+    private int fastRun = 0;
 
     private final Runnable check = this::check;
 
@@ -88,13 +90,14 @@ final class CursorHider {
     void onHover(MotionEvent e) {
         float x = e.getRawX(), y = e.getRawY();
         long t = e.getEventTime();
-        if (!anchored) { ax = sx = lx = x; ay = sy = ly = y; lt = t; anchored = true; return; }
+        if (!anchored) { ax = sx = lx = x; ay = sy = ly = y; lt = t; anchored = true; fastRun = 0; return; }
         float dt = Math.max(1, t - lt) / 1000f;
         float speed = (float) Math.hypot(x - lx, y - ly) / dt;
         lx = x; ly = y; lt = t;
         sx += (x - sx) * SMOOTH; sy += (y - sy) * SMOOTH;   // smoothing absorbs head tremor
         boolean far = Math.hypot(sx - ax, sy - ay) > dp(RADIUS_DP);
-        boolean fast = speed > dp(SPEED_DP_PER_S) && Math.hypot(x - ax, y - ay) > dp(RADIUS_DP) / 2;
+        fastRun = speed > dp(SPEED_DP_PER_S) ? fastRun + 1 : 0;
+        boolean fast = fastRun >= FAST_SAMPLES && Math.hypot(x - ax, y - ay) > dp(RADIUS_DP) / 2;
         if (far || fast) { reveal(); activity(); }
     }
 
