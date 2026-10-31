@@ -367,7 +367,7 @@ The plain Android interface has no pointer for the neckband buttons, which is wh
 
 | You do | Result |
 |---|---|
-| Press Home from any app or from the app list | Google TV opens (or the Android home, if you chose it under **Home button opens**) |
+| Press Home from any app or from the app list | Google TV opens (or the Android home or Viture's 3D home, if you chose it under **Home button opens**) |
 | Press Home while that home is already in front | The other one opens |
 | Press Back out of Google TV | The stock app list opens |
 | Restart the neckband | It starts in Google TV, with head gaze on (and gestures off if you chose so) |
@@ -404,7 +404,7 @@ The panel stays open until you **click outside it**, **click the ☰ button agai
 
 | Setting | What it does |
 |---|---|
-| **Home button opens** | *Google TV* (default) or *Android home*. Home opens the one you choose; pressing Home again while it is in front opens the other |
+| **Home button opens** | *Google TV* (default), *Android home* or *Viture 3D*. Home opens the one you choose; pressing Home again while it is in front opens its partner (Google TV and the Android home swap with each other; Viture 3D swaps with the Android home). *Viture 3D* brings back the original experience, at the cost of the 3D home's battery use (about one processor core); it is offered only when Viture's launcher is installed and enabled |
 | **At startup: Head gaze** | On by default. Switch it off if you prefer to start without head tracking |
 | **At startup: Hand gestures** | On is Viture's default. Off switches the gesture camera off at once and keeps it off after every restart, the biggest single battery saving (the same flag `apply gestures` sets) |
 | **`</>`** (top right) | Shows or hides the Wireless debugging row below. Hidden by default, since everyday users never need it. It only changes what TV Home shows: Android's Developer options and Wireless debugging itself are not touched |

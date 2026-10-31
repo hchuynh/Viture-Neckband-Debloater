@@ -9,8 +9,8 @@ import android.os.SystemClock;
 import android.provider.Settings;
 
 /**
- * Home toggle. Home opens the chosen home (Google TV by default, or the Android home); Home while
- * that one is already in front opens the other. The choice is set in TV Home settings.
+ * Home toggle. Home opens the chosen home (Google TV by default, the Android home, or Viture's 3D
+ * home); Home while that one is already in front opens its partner. The choice is set in TV Home settings.
  */
 public class HomeActivity extends Activity {
     static final String GTV = "com.google.android.videos";
@@ -26,23 +26,34 @@ public class HomeActivity extends Activity {
     }
     @Override protected void onNewIntent(Intent i) { super.onNewIntent(i); route(); finish(); }
 
+    static final String VITURE = "com.viture.launcher";
+
+    /**
+     * Home opens the chosen home; Home again while it is in front opens its partner:
+     * Google TV and the Android home swap with each other, Viture 3D swaps with the Android home.
+     */
     private void route() {
         long now = SystemClock.elapsedRealtime();
         String fg = lastForeground();
+        int mode = Prefs.getInt(this, Prefs.HOME_MODE, 0);   // 0 Google TV, 1 Android home, 2 Viture 3D
+        String primary = mode == 1 ? LAUNCHER.getPackageName() : mode == 2 ? VITURE : GTV;
+        String partner = mode == 0 ? LAUNCHER.getPackageName() : mode == 1 ? GTV : LAUNCHER.getPackageName();
         // Without usage access, fall back to a double press within 2.5 s.
-        boolean androidFirst = Prefs.getInt(this, Prefs.HOME_MODE, 0) == 1;
-        String primary = androidFirst ? LAUNCHER.getPackageName() : GTV;
         boolean primaryInFront = (fg != null) ? primary.equals(fg) : (now - lastPress) < 2500;
-        boolean toLauncher = androidFirst != primaryInFront;   // the chosen home, or the other one if it is already in front
         lastPress = now;
+        String target = primaryInFront ? partner : primary;
         Intent i = null;
-        if (!toLauncher) i = getPackageManager().getLaunchIntentForPackage(GTV);
+        if (GTV.equals(target)) i = getPackageManager().getLaunchIntentForPackage(GTV);
+        else if (VITURE.equals(target)) i = new Intent("com.viture.action.VITURE_LAUNCHER").setPackage(VITURE);
         if (i == null) i = new Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME).setComponent(LAUNCHER);
         i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         try { startActivity(i); }
         catch (Exception e) {
-            try { startActivity(new Intent(Settings.ACTION_HOME_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)); }
-            catch (Exception ignored) { }
+            try { startActivity(new Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME).setComponent(LAUNCHER).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)); }
+            catch (Exception e2) {
+                try { startActivity(new Intent(Settings.ACTION_HOME_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)); }
+                catch (Exception ignored) { }
+            }
         }
     }
 

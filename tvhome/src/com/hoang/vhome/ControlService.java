@@ -504,7 +504,7 @@ public class ControlService extends AccessibilityService {
         cols.addView(right, rp);
         // first, full width: which home the Home button opens
         LinearLayout home = cell(Icon.HOME, "Home button opens", null, segmented(
-            new String[]{"Google TV", "Android home"}, Prefs.getInt(this, Prefs.HOME_MODE, 0),
+            homeOptions(), Prefs.getInt(this, Prefs.HOME_MODE, 0),
             i -> Prefs.putInt(this, Prefs.HOME_MODE, i)));
         target.addView(home, cellLp());
         target.addView(cols);
@@ -568,10 +568,10 @@ public class ControlService extends AccessibilityService {
     private void footer() {
         String v = "";
         try { v = getPackageManager().getPackageInfo(getPackageName(), 0).versionName; } catch (Exception ignored) { }
-        TextView t = text("TV Home " + v, 12, DIM);
-        t.setGravity(Gravity.CENTER);
+        TextView t = text("TV Home " + v, 10, DIM);
+        t.setGravity(Gravity.START);
         t.setAlpha(0.7f);
-        t.setPadding(0, dp(10), 0, 0);
+        t.setPadding(dp(6), dp(10), 0, 0);
         body.addView(t, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
     }
 
@@ -616,6 +616,15 @@ public class ControlService extends AccessibilityService {
     }
 
     interface Choice { void chosen(int index); }
+
+    /** Viture 3D is offered only if its home is installed and enabled (debloated devices may lack it). */
+    private String[] homeOptions() {
+        try {
+            if (getPackageManager().getApplicationInfo(HomeActivity.VITURE, 0).enabled)
+                return new String[]{"Google TV", "Android home", "Viture 3D"};
+        } catch (Exception ignored) { }
+        return new String[]{"Google TV", "Android home"};
+    }
 
     /** A two-or-more option bar; the selected option is filled with the accent colour. */
     private LinearLayout segmented(String[] options, int selected, Choice choice) {

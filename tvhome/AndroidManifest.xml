@@ -10,6 +10,7 @@
     <queries>
         <package android:name="com.google.android.videos"/>
         <package android:name="com.android.launcher3"/>
+        <package android:name="com.viture.launcher"/>
     </queries>
     <application android:label="TV Home" android:icon="@android:drawable/ic_menu_view" android:allowBackup="false">
         <activity android:name=".HomeActivity" android:exported="true"
