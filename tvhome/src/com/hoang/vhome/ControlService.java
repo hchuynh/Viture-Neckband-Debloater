@@ -429,6 +429,19 @@ public class ControlService extends AccessibilityService {
         t.setPadding(dp(back ? 10 : 6), 0, 0, 0);
         head.addView(t, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
         if (headerAbout) {
+            // shows or hides TV Home's own Wireless debugging row; Android's Developer options are untouched
+            boolean dev = Prefs.getInt(this, Prefs.DEV_MODE, 0) == 1;
+            TextView devBtn = iconButton(Icon.DEBUG, v -> { Prefs.putInt(this, Prefs.DEV_MODE, dev ? 0 : 1); pageMain(); });
+            if (dev) {
+                devBtn.setBackground(round(ACCENT, 999));
+                Icon d = new Icon(Icon.DEBUG, 0xFF0F1426, ACCENT);
+                d.setBounds(0, 0, dp(26), dp(26));
+                devBtn.setCompoundDrawablesRelative(d, null, null, null);
+            }
+            devBtn.setContentDescription(dev ? "Hide Wireless debugging" : "Show Wireless debugging");   // TV Home only, not Android's Developer options
+            LinearLayout.LayoutParams dl = new LinearLayout.LayoutParams(dp(48), dp(48));
+            dl.setMarginEnd(dp(10));
+            head.addView(devBtn, dl);
             LinearLayout.LayoutParams al = new LinearLayout.LayoutParams(dp(48), dp(48));
             al.setMarginEnd(dp(10));
             head.addView(iconButton(Icon.INFO, v -> pageAbout()), al);
@@ -532,7 +545,10 @@ public class ControlService extends AccessibilityService {
         buttons.setOnClickListener(v -> pageButtons());
         target.addView(buttons, cellLp());
 
-        // full width under both columns: Wireless debugging, with room for every address
+        // full width under both columns, only in developer mode (the </> button in the header)
+        h.removeCallbacks(refreshAdb);
+        adbLine = null;
+        if (Prefs.getInt(this, Prefs.DEV_MODE, 0) != 1) { footer(); return; }
         target = body;
         section("Wireless debugging");
         LinearLayout adb = cell(Icon.DEBUG, "Wireless debugging", adbText(), toggle(Net.adbWifiOn(this), on -> {
@@ -545,6 +561,18 @@ public class ControlService extends AccessibilityService {
         h.removeCallbacks(refreshAdb);
         h.post(refreshAdb);
         if (Net.adbWifiOn(this) && Net.adbPort() == 0 && !portTried) h.postDelayed(this::readPortBehind, 300);
+        footer();
+    }
+
+    /** Small version label at the bottom of the settings popup. */
+    private void footer() {
+        String v = "";
+        try { v = getPackageManager().getPackageInfo(getPackageName(), 0).versionName; } catch (Exception ignored) { }
+        TextView t = text("TV Home " + v, 12, DIM);
+        t.setGravity(Gravity.CENTER);
+        t.setAlpha(0.7f);
+        t.setPadding(0, dp(10), 0, 0);
+        body.addView(t, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
     }
 
     interface Toggler { boolean set(boolean on); }

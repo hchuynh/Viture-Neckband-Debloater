@@ -407,7 +407,8 @@ The panel stays open until you **click outside it**, **click the ☰ button agai
 | **Home button opens** | *Google TV* (default) or *Android home*. Home opens the one you choose; pressing Home again while it is in front opens the other |
 | **At startup: Head gaze** | On by default. Switch it off if you prefer to start without head tracking |
 | **At startup: Hand gestures** | On is Viture's default. Off switches the gesture camera off at once and keeps it off after every restart, the biggest single battery saving (the same flag `apply gestures` sets) |
-| **Wireless debugging** | Switches it on or off now; the line below shows the neckband's addresses (Wi-Fi first, then VPN such as Tailscale) and the port. Android does not let apps read the port, so TV Home briefly opens the system Wireless debugging page behind the popup, reads its "IP address & Port" line and steps back. It also picks the port up whenever you open that page yourself |
+| **`</>`** (top right) | Shows or hides the Wireless debugging row below. Hidden by default, since everyday users never need it. It only changes what TV Home shows: Android's Developer options and Wireless debugging itself are not touched |
+| **Wireless debugging** (with `</>` on) | Switches it on or off now; the line below shows the neckband's addresses (Wi-Fi first, then VPN such as Tailscale) and the port. Android does not let apps read the port, so TV Home briefly opens the system Wireless debugging page behind the popup, reads its "IP address & Port" line and steps back (only while the row is shown). It also picks the port up whenever you open that page yourself |
 | *(advanced)* Wireless debugging after the next restart | `adb shell settings put global vnd_adb_next_boot 1` before rebooting: TV Home turns it on once after the restart and shows the new address and port on screen |
 | **Cursor: Hide when still** | On by default; see below |
 | **Controls: Edge controls** | On by default; see below |

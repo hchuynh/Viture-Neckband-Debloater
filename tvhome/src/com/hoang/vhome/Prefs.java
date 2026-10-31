@@ -19,6 +19,7 @@ final class Prefs {
     static final String ADB_WIFI = "adb_wifi_enabled";
     static final String EDGE = "vnd_edge_controls";              // 1 (default): edge scrollbar and media bar
     static final String HOME_MODE = "vnd_home_mode";             // 0 (default): Home opens Google TV first; 1: the Android home first
+    static final String DEV_MODE = "vnd_dev_mode";               // 1: show developer rows (Wireless debugging); 0 by default
     static final String HIDE_CURSOR = "vnd_hide_cursor";         // 1 (default): hide the cursor after 5 s without moving
 
     // Button actions

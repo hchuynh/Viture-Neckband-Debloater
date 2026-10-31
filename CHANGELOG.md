@@ -4,7 +4,7 @@
 
 - TV Home 1.8.0: hide the head-gaze cursor after 5 seconds without moving (Settings, Cursor, on by default). Head tremor is tolerated: positions are smoothed and only a move beyond about 28 dp, or a quick turn, brings the cursor back. A click while hidden reveals it and is passed on to the app.
 - Media bar: pressing a button no longer closes it; the edge controls close 2 seconds after the cursor leaves them.
-- Settings: new full-width **Home button opens** row on top (Google TV or Android home; Home again opens the other); new Cursor section; Wireless debugging is a full-width row under the two columns.
+- Settings: new full-width **Home button opens** row on top (Google TV or Android home; Home again opens the other); new Cursor section; Wireless debugging is a full-width row under the two columns, shown only after pressing `</>` in the header (hidden by default; this does not change Android's Developer options); small version label at the bottom.
 
 ## 1.7.0 (2026-10-30)
 
