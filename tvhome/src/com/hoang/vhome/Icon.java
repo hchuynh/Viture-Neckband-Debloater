@@ -13,11 +13,14 @@ final class Icon extends Drawable {
     static final int MENU = 0, CLOSE = 1, CLOSE_ALL = 2, NOTIFICATIONS = 3, QUICK_SETTINGS = 4,
                      VOLUME_DOWN = 5, VOLUME_UP = 6, GAZE_ON = 7, GAZE_OFF = 8,
                      SETTINGS = 9, INFO = 10, BUTTONS = 11, DEBUG = 12, BACK = 13, STARTUP = 14, CHECK = 15,
-                     UP = 16, DOWN = 17, PREV = 18, NEXT = 19, PLAY_PAUSE = 20, REWIND = 21, FORWARD = 22, SCROLL = 23, MUSIC = 24, TIMER = 25, HAND = 26, HOME = 27;
+                     UP = 16, DOWN = 17, PREV = 18, NEXT = 19, PLAY_PAUSE = 20, REWIND = 21, FORWARD = 22, SCROLL = 23, MUSIC = 24, TIMER = 25, HAND = 26, HOME = 27,
+                     WIFI = 28, BLUETOOTH = 29, FILM = 30, MOUSE = 31, BATTERY = 32;
     private final int type, fg, bg;
+    private final boolean barred;   // drawn with a slash: the feature is off
     private final Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
 
-    Icon(int type, int fg, int bg) { this.type = type; this.fg = fg; this.bg = bg; }
+    Icon(int type, int fg, int bg) { this(type, fg, bg, false); }
+    Icon(int type, int fg, int bg, boolean barred) { this.type = type; this.fg = fg; this.bg = bg; this.barred = barred; }
 
     @Override public void draw(Canvas c) {
         Rect b = getBounds();
@@ -122,6 +125,26 @@ final class Icon extends Drawable {
                 stroke(); c.drawLine(5, 12.5f, 10, 17.5f, p); c.drawLine(10, 17.5f, 19.5f, 7, p); break;
             case STARTUP: {   // power symbol
                 stroke(); c.drawArc(new RectF(4, 4.5f, 20, 20.5f), -60, 300, false, p); c.drawLine(12, 3, 12, 11, p); break; }
+            case WIFI:   // two arcs and a dot
+                stroke(); c.drawArc(new RectF(2.5f, 9, 21.5f, 28), 225, 90, false, p);
+                c.drawArc(new RectF(6.5f, 13, 17.5f, 24), 225, 90, false, p);
+                fill(fg); c.drawCircle(12, 18.5f, 1.7f, p); break;
+            case BLUETOOTH: {   // rune
+                stroke(); Path bt = new Path();
+                bt.moveTo(6.5f, 7.5f); bt.lineTo(16.5f, 16.5f); bt.lineTo(12, 21); bt.lineTo(12, 3); bt.lineTo(16.5f, 7.5f); bt.lineTo(6.5f, 16.5f);
+                c.drawPath(bt, p); break; }
+            case FILM: {   // screen with a play triangle
+                stroke(); c.drawRoundRect(new RectF(2.5f, 5, 21.5f, 19), 2.5f, 2.5f, p);
+                fill(fg); Path pl = new Path(); pl.moveTo(10, 9); pl.lineTo(15.5f, 12); pl.lineTo(10, 15); pl.close(); c.drawPath(pl, p); break; }
+            case MOUSE:   // mouse body with a wheel line
+                stroke(); c.drawRoundRect(new RectF(6.5f, 3, 17.5f, 21), 5.5f, 5.5f, p); c.drawLine(12, 3.5f, 12, 9, p); break;
+            case BATTERY:
+                stroke(); c.drawRoundRect(new RectF(2.5f, 7.5f, 19, 16.5f), 2, 2, p);
+                fill(fg); c.drawRect(19.5f, 10, 21.5f, 14, p); c.drawRect(5, 10, 12, 14, p); break;
+        }
+        if (barred) {   // slash with a gap cut out around it, like the system icons
+            p.setStyle(Paint.Style.STROKE); p.setColor(bg); p.setStrokeWidth(4.5f); c.drawLine(4, 20, 20, 4, p);
+            p.setColor(fg); p.setStrokeWidth(2f); c.drawLine(4, 20, 20, 4, p);
         }
         c.restore();
     }

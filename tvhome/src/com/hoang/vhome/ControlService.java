@@ -79,6 +79,11 @@ public class ControlService extends AccessibilityService {
             if (e.getAction() == KeyEvent.ACTION_UP) h.post(() -> { if (popup != null) hidePopup(); else hidePanel(); });
             return true;
         }
+        // watch mode switched head gaze off for a video: a neckband volume button brings it back
+        if ((k == KeyEvent.KEYCODE_VOLUME_UP || k == KeyEvent.KEYCODE_VOLUME_DOWN) && autoGaze != null && autoGaze.holdsGaze()) {
+            if (e.getAction() == KeyEvent.ACTION_UP) h.post(() -> autoGaze.volumePressed());
+            return true;
+        }
         String a = keymap.get(k);
         if (a == null) return false;
         // with head gaze on, Viture uses the neckband volume buttons to click: leave them alone
@@ -261,6 +266,137 @@ public class ControlService extends AccessibilityService {
         updater = new Updater(this);
         if (Prefs.getInt(this, Prefs.ONBOARDED, 0) != 1) h.postDelayed(() -> { if (popup == null) pageTour(0); }, 4000);
         h.postDelayed(updateTick, 60_000);
+        autoGaze = new AutoGaze(this);
+        refreshAutoGaze();
+    }
+
+    // ------------------------------------------------------------------ profiles
+    private AutoGaze autoGaze;
+
+    private void refreshAutoGaze() {
+        int b = Profiles.bits(this, Profiles.current(this));
+        if (autoGaze != null) autoGaze.configure(Profiles.has(b, Profiles.WATCH), Profiles.has(b, Profiles.PERIPHERAL));
+    }
+
+    private void activate(int profile) {
+        Profiles.apply(this, profile);
+        refreshAutoGaze();
+    }
+
+    /** One small icon per switch of the profile; a slashed, dimmed icon when it is off. */
+    private LinearLayout iconStrip(int bits, int sizeDp) {
+        LinearLayout strip = new LinearLayout(this);
+        strip.setOrientation(LinearLayout.HORIZONTAL);
+        for (int i = 0; i < Profiles.ITEMS.length; i++) {
+            boolean on = Profiles.has(bits, Profiles.ITEMS[i]);
+            View v = new EdgeControls.IconView(this, Profiles.ICONS[i], sizeDp, on ? FG : DIM, POPUP, !on);
+            if (!on) v.setAlpha(0.6f);
+            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(dp(sizeDp + 4), dp(sizeDp + 4));
+            lp.setMarginEnd(dp(6));
+            strip.addView(v, lp);
+        }
+        return strip;
+    }
+
+    /** A profile line: name and its icons, a check on the active one. */
+    private LinearLayout profileRow(int p, int active, View.OnClickListener action, View right) {
+        LinearLayout r = new LinearLayout(this);
+        r.setOrientation(LinearLayout.HORIZONTAL);
+        r.setGravity(Gravity.CENTER_VERTICAL);
+        r.setBackground(round(BUTTON, dp(12)));
+        r.setPaddingRelative(dp(22), dp(10), dp(18), dp(10));
+        LinearLayout texts = new LinearLayout(this);
+        texts.setOrientation(LinearLayout.VERTICAL);
+        TextView t = text(Profiles.NAMES[p], 19, p == active ? ACCENT : FG);
+        texts.addView(t);
+        TextView d = text(Profiles.DESCRIPTIONS[p], 14, DIM);
+        texts.addView(d);
+        LinearLayout.LayoutParams sl = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        sl.topMargin = dp(6);
+        texts.addView(iconStrip(Profiles.bits(this, p), 18), sl);
+        r.addView(texts, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
+        if (right != null) r.addView(right);
+        else if (p == active) r.addView(new EdgeControls.IconView(this, Icon.CHECK, 26, ACCENT, BUTTON, false), new LinearLayout.LayoutParams(dp(32), dp(32)));
+        r.setOnClickListener(action);
+        return r;
+    }
+
+    private void pageProfiles() {
+        openPopup("Profile", false, 640);
+        backTo = null;
+        h.removeCallbacks(refreshAdb);
+        int active = Profiles.current(this);
+        for (int p = 0; p < Profiles.CUSTOM; p++) {
+            final int fp = p;
+            body.addView(profileRow(p, active, v -> { activate(fp); pageProfiles(); }, null), rowLp(LinearLayout.LayoutParams.MATCH_PARENT));
+        }
+        TextView edit = text(active == Profiles.CUSTOM ? "\u2713  Edit \u203a" : "Edit \u203a", 17, ACCENT);
+        edit.setPadding(dp(12), dp(8), dp(4), dp(8));
+        edit.setOnClickListener(v -> pageCustom());
+        body.addView(profileRow(Profiles.CUSTOM, active, v -> { activate(Profiles.CUSTOM); pageProfiles(); }, edit),
+            rowLp(LinearLayout.LayoutParams.MATCH_PARENT));
+        note("Choosing a profile sets head gaze and hand gestures now and at every startup, and switches Wi-Fi and Bluetooth once.");
+    }
+
+    private int customDraft;
+
+    private void pageCustom() {
+        openPopup("Custom profile", true, 640);
+        backTo = this::pageProfiles;
+        customDraft = Profiles.bits(this, Profiles.CUSTOM);
+        for (int i = 0; i < Profiles.ITEMS.length; i++) {
+            final int item = Profiles.ITEMS[i];
+            body.addView(cell(Profiles.ICONS[i], Profiles.ITEM_NAMES[i], Profiles.ITEM_SUBS[i],
+                toggle(Profiles.has(customDraft, item), on -> {
+                    customDraft = on ? customDraft | item : customDraft & ~item;
+                    return on; })), cellLp());
+        }
+        TextView save = row(Icon.CHECK, "Save and activate", false, v -> {
+            Profiles.saveCustom(this, customDraft);
+            activate(Profiles.CUSTOM);
+            pageProfiles();
+        });
+        save.setTextColor(ACCENT);
+        body.addView(save, rowLp(LinearLayout.LayoutParams.MATCH_PARENT));
+    }
+
+    /** Header of the panel: Wi-Fi and Bluetooth switches and the battery estimate. */
+    private LinearLayout panelHeader() {
+        LinearLayout bar = new LinearLayout(this);
+        bar.setOrientation(LinearLayout.HORIZONTAL);
+        bar.setGravity(Gravity.CENTER_VERTICAL);
+        bar.setPadding(dp(4), dp(4), dp(4), dp(4));
+        bar.setBackground(round(0xFF1C2340, 999));
+        bar.addView(radioButton(Icon.WIFI, Radio.wifiOn(this), on -> { Radio.setWifi(this, on); return on; }),
+            new LinearLayout.LayoutParams(dp(64), dp(44)));
+        LinearLayout.LayoutParams bl = new LinearLayout.LayoutParams(dp(64), dp(44));
+        bl.setMarginStart(dp(4));
+        bar.addView(radioButton(Icon.BLUETOOTH, Radio.bluetoothOn(), on -> { Radio.setBluetooth(on); return on; }), bl);
+        LinearLayout batt = new LinearLayout(this);
+        batt.setOrientation(LinearLayout.HORIZONTAL);
+        batt.setGravity(Gravity.CENTER);
+        batt.addView(new EdgeControls.IconView(this, Icon.BATTERY, 20, DIM, 0xFF1C2340, false), new LinearLayout.LayoutParams(dp(24), dp(24)));
+        TextView bt = text(" " + Radio.battery(this), 14, FG);
+        bt.setSingleLine(true);
+        batt.addView(bt);
+        bar.addView(batt, new LinearLayout.LayoutParams(0, dp(44), 1));
+        return bar;
+    }
+
+    /** A pill-shaped switch with an icon: filled with the accent colour when on. */
+    private View radioButton(int icon, boolean on, Toggler t) {
+        final boolean[] state = {on};
+        final EdgeControls.IconView[] iv = new EdgeControls.IconView[1];
+        android.widget.FrameLayout f = new android.widget.FrameLayout(this);
+        Runnable paint = () -> {
+            f.removeAllViews();
+            iv[0] = new EdgeControls.IconView(this, icon, 22, state[0] ? 0xFF0F1426 : FG, state[0] ? ACCENT : 0xFF1C2340, !state[0]);
+            f.addView(iv[0]);
+            f.setBackground(state[0] ? round(ACCENT, 999) : null);
+        };
+        paint.run();
+        f.setOnClickListener(v -> { state[0] = t.set(!state[0]); paint.run(); });
+        return f;
     }
 
     // ------------------------------------------------------------------ updates
@@ -442,6 +578,7 @@ public class ControlService extends AccessibilityService {
         try {
             if (observer != null) getContentResolver().unregisterContentObserver(observer);
             if (edge != null) edge.stop();
+            if (autoGaze != null) autoGaze.stop();
             if (hider != null) hider.setEnabled(false);
             h.removeCallbacks(sleepNow);
             h.removeCallbacks(updateTick);
@@ -496,6 +633,7 @@ public class ControlService extends AccessibilityService {
         list.setBackground(round(PANEL, dp(18)));
         panel.addView(list);
         // navigating actions close the panel; volume and head gaze keep it open
+        list.addView(panelHeader(), rowLp(ROW_W));
         list.addView(row(Icon.CLOSE, "Close app", true, v -> closeApp()), rowLp(ROW_W));
         list.addView(row(Icon.CLOSE_ALL, "Close all apps", true, v -> closeAll()), rowLp(ROW_W));
         list.addView(row(Icon.NOTIFICATIONS, "Notifications", true, v -> performGlobalAction(GLOBAL_ACTION_NOTIFICATIONS)), rowLp(ROW_W));
@@ -516,6 +654,7 @@ public class ControlService extends AccessibilityService {
         if (sleepAt > 0)
             list.addView(row(Icon.TIMER, "Sleep in " + sleepLeftMin() + " min: cancel", true, v -> setSleep(0)), rowLp(ROW_W));
         list.addView(row(Icon.SETTINGS, "Settings", true, v -> pageMain()), rowLp(ROW_W));
+        list.addView(profileEntry(), rowLp(ROW_W));
 
         panel.setOnBack(this::hidePanel);
         WindowManager.LayoutParams lp = focusParams(WindowManager.LayoutParams.WRAP_CONTENT, WindowManager.LayoutParams.WRAP_CONTENT);
@@ -524,6 +663,22 @@ public class ControlService extends AccessibilityService {
         lp.y = dp(BOTTOM_DP + SIZE_DP + 10);
         wm.addView(panel, lp);
         updatePause();
+    }
+
+    /** Last panel row: the active profile and its icons; opens the profile list. */
+    private View profileEntry() {
+        int p = Profiles.current(this);
+        LinearLayout r = new LinearLayout(this);
+        r.setOrientation(LinearLayout.VERTICAL);
+        r.setBackground(round(BUTTON, dp(12)));
+        r.setPaddingRelative(dp(24), dp(10), dp(20), dp(10));
+        TextView t = text("Profile: " + Profiles.NAMES[p], 20, FG);
+        r.addView(t);
+        LinearLayout.LayoutParams sl = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        sl.topMargin = dp(4);
+        r.addView(iconStrip(Profiles.bits(this, p), 16), sl);
+        r.setOnClickListener(v -> { hidePanel(); h.postDelayed(this::pageProfiles, 150); });
+        return r;
     }
 
     private void hidePanel() {
@@ -651,11 +806,12 @@ public class ControlService extends AccessibilityService {
         target = left;
         section("At startup");
         target.addView(cell(Icon.GAZE_ON, "Head gaze", "Cursor follows your head", toggle(Prefs.getInt(this, Prefs.BOOT_GAZE, 1) == 1, on -> {
-            Prefs.putInt(this, Prefs.BOOT_GAZE, on ? 1 : 0); return on; })), cellLp());
+            Prefs.putInt(this, Prefs.BOOT_GAZE, on ? 1 : 0); Profiles.startupChanged(this); return on; })), cellLp());
         // On = Viture's default (hand gestures allowed). Off = gesture camera off now and after every restart.
         target.addView(cell(Icon.HAND, "Hand gestures", "Off keeps the camera off, saves battery", toggle(Prefs.getInt(this, BootReceiver.GESTURES_OFF_FLAG, 0) == 0, on -> {
             Prefs.putInt(this, BootReceiver.GESTURES_OFF_FLAG, on ? 0 : 1);
             Prefs.putInt(this, BootReceiver.GESTURES, on ? 1 : 0);
+            Profiles.startupChanged(this);
             return on; })), cellLp());
         section("Cursor");
         target.addView(cell(Icon.GAZE_OFF, "Hide when still", "After 5 s; moves or clicks bring it back", toggle(Prefs.getInt(this, Prefs.HIDE_CURSOR, 1) == 1, on -> {

@@ -391,8 +391,9 @@ final class EdgeControls {
     static final class IconView extends View {
         private final Icon icon;
         private final int sizeDp;
-        IconView(android.content.Context c, int type, int sizeDp) {
-            super(c); this.sizeDp = sizeDp; icon = new Icon(type, ControlService.FG, ControlService.BUTTON);
+        IconView(android.content.Context c, int type, int sizeDp) { this(c, type, sizeDp, ControlService.FG, ControlService.BUTTON, false); }
+        IconView(android.content.Context c, int type, int sizeDp, int fg, int bg, boolean barred) {
+            super(c); this.sizeDp = sizeDp; icon = new Icon(type, fg, bg, barred);
         }
         @Override protected void onDraw(android.graphics.Canvas c) {
             int size = Math.round(sizeDp * getResources().getDisplayMetrics().density);

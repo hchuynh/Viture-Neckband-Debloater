@@ -23,6 +23,8 @@ final class Prefs {
     static final String HIDE_CURSOR = "vnd_hide_cursor";         // 1 (default): hide the cursor after 5 s without moving
     static final String UPDATE_CHECK = "vnd_update_check";       // 1: check GitHub for a new version once a day; 0 by default
     static final String ONBOARDED = "vnd_onboarded";             // 1: the welcome tour was shown
+    static final String PROFILE = "vnd_profile";                 // 0 Standard, 1 Cinema, 2 Work, 3 Airplane, 4 Custom
+    static final String PROFILE_CUSTOM = "vnd_profile_custom";   // the Custom profile's switches (Profiles bits)
 
     // Button actions
     static final String A_DEFAULT = "default", A_PANEL = "panel", A_BACK = "back", A_HOME = "home",
