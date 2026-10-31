@@ -437,18 +437,31 @@ How it works, for the curious: Android gives apps no global cursor position. App
 
 ### Edge controls
 
-Head gaze can point and click but not drag, which makes long lists, web pages and settings hard to scroll. Push the cursor against the **left or right edge** of the screen and a thin **scrollbar** appears on that side, set slightly in from the edge:
+Head gaze can point and click but not drag, which makes long lists, web pages and settings hard to scroll. Push the cursor against the **left or right edge** of the screen and a thin **scrollbar** appears on that side, set slightly in from the edge. While something is **playing**, a **media bar** also appears in the middle of the screen.
+
+<p align="center"><img src="docs/img/edge-context-right.png" alt="Edge controls on screen: the scrollbar on the right edge and the media bar in the middle, over Android's Display settings" width="720"></p>
+<p align="center"><sub>Cursor pushed against the right edge: the scrollbar opens on the right. The media bar in the middle appears only while something is playing (shown here over Android's Display settings for illustration).</sub></p>
+
+<p align="center"><img src="docs/img/edge-context-left.png" alt="The same controls opened from the left edge: the scrollbar sits on the left" width="720"></p>
+<p align="center"><sub>Cursor pushed against the left edge: the same scrollbar opens on the left.</sub></p>
+
+**Scrollbar**
+
+<img src="docs/img/edge-scroll.png" alt="The edge scrollbar: top half scrolls up, bottom half scrolls down" height="220" align="right">
 
 - **Click** the top or bottom half to scroll one page up or down.
 - **Double-click** a half to jump to the top or the bottom.
 - **Press and drag** along it to scroll continuously; the further you drag, the faster it goes.
 
-<p align="center"><img src="docs/img/edge-scroll.png" alt="The edge scrollbar: top half scrolls up, bottom half scrolls down" height="300"></p>
+It scrolls the largest scrollable area of the app in front, so it works in lists, settings, web pages and app stores alike.
 
-While something is **playing**, a **media bar** also appears in the middle of the screen: previous, back 10 seconds, play/pause, forward 10 seconds, next. When nothing plays it stays hidden.
+<br clear="right">
+
+**Media bar**
 
 <p align="center"><img src="docs/img/edge-media.png" alt="The media bar: previous, back, play/pause, forward, next" width="420"></p>
- In YouTube, which ignores the standard skip keys, the skip buttons double-tap the left or right part of the player, exactly as you would with a finger (10 seconds by default, adjustable in YouTube's settings); other apps get the standard media keys and choose their own skip length.
+
+Previous, skip back, play/pause, skip forward, next. When nothing plays it stays hidden. In YouTube, which ignores the standard skip keys, the skip buttons double-tap the left or right part of the player, exactly as you would with a finger (10 seconds by default, adjustable in YouTube's settings); other apps get the standard media keys and choose their own skip length.
 
 Both stay open while you use them (pressing a media button never closes them), and close on a click anywhere else or 2 seconds after the cursor was last on them. A cursor that only sweeps past the edge does not open them: it has to rest there for a moment. Switch the feature off in Settings if you never want it. Neckband buttons cannot open them, because Viture keeps the volume buttons for itself while head gaze is on.
 

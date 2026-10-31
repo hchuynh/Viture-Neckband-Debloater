@@ -1,9 +1,10 @@
 # Changelog
 
-## 1.8.0 (unreleased)
+## 1.8.0 (2026-10-31)
 
 - TV Home 1.8.0: hide the head-gaze cursor after 5 seconds without moving (Settings, Cursor, on by default). Head tremor is tolerated: positions are smoothed and only a move beyond about 60 dp, or a sustained quick turn, brings the cursor back. A click while hidden reveals it and is passed on to the app.
 - Media bar: pressing a button no longer closes it; the edge controls close 2 seconds after the cursor leaves them.
+- README: edge controls shown in context (right and left edge over Android's Display settings).
 - Settings: new full-width **Home button opens** row on top (Google TV, Android home or Viture 3D, the last only when Viture's launcher is enabled; Home again opens the partner home); new Cursor section; Wireless debugging is a full-width row under the two columns, shown only after pressing `</>` in the header (hidden by default; this does not change Android's Developer options); small version label at the bottom.
 
 ## 1.7.0 (2026-10-30)
