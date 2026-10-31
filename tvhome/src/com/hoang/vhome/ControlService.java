@@ -669,14 +669,18 @@ public class ControlService extends AccessibilityService {
     private View profileEntry() {
         int p = Profiles.current(this);
         LinearLayout r = new LinearLayout(this);
-        r.setOrientation(LinearLayout.VERTICAL);
+        r.setOrientation(LinearLayout.HORIZONTAL);
+        r.setGravity(Gravity.CENTER_VERTICAL);
         r.setBackground(round(BUTTON, dp(12)));
-        r.setPaddingRelative(dp(24), dp(10), dp(20), dp(10));
-        TextView t = text("Profile: " + Profiles.NAMES[p], 20, FG);
-        r.addView(t);
+        r.setPaddingRelative(dp(24), dp(10), dp(16), dp(10));
+        LinearLayout texts = new LinearLayout(this);
+        texts.setOrientation(LinearLayout.VERTICAL);
+        texts.addView(text("Profile: " + Profiles.NAMES[p], 20, FG));
         LinearLayout.LayoutParams sl = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
         sl.topMargin = dp(4);
-        r.addView(iconStrip(Profiles.bits(this, p), 16), sl);
+        texts.addView(iconStrip(Profiles.bits(this, p), 16), sl);
+        r.addView(texts, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
+        r.addView(text("\u203a", 28, ACCENT));   // chevron: opens a sub menu
         r.setOnClickListener(v -> { hidePanel(); h.postDelayed(this::pageProfiles, 150); });
         return r;
     }
