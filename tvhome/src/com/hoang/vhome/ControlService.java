@@ -305,7 +305,8 @@ public class ControlService extends AccessibilityService {
     // ------------------------------------------------------------------ welcome tour
     private static final String[][] TOUR = {
         {"Welcome to TV Home", "TV Home makes Google TV your home on the VITURE Neckband and adds a few handy controls. "
-            + "This short tour shows the main ones."},
+            + "This short tour shows the main ones.\n\nTo move through it, turn your head to move the pointer onto Next, "
+            + "then click by pressing either volume button on the neckband (with head gaze on, they act as click buttons)."},
         {"The controls button", "Move the cursor to the bottom-right corner, next to the taskbar: a \u2630 button appears. "
             + "It opens Close app, Close all apps, Notifications, volume, head gaze and Settings. The Menu key on a controller opens it too."},
         {"Edge controls", "Rest the cursor on the left or right edge of the screen for a moment and a scrollbar appears. "
@@ -340,8 +341,8 @@ public class ControlService extends AccessibilityService {
         }
         LinearLayout nav = new LinearLayout(this);
         nav.setOrientation(LinearLayout.HORIZONTAL);
-        nav.addView(row(-1, "Skip tour", false, v -> pageTour(TOUR.length - 1)),
-            new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
+        TextView skip = row(Icon.CLOSE, "Skip tour", false, v -> pageTour(TOUR.length - 1));
+        nav.addView(skip, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
         LinearLayout.LayoutParams np = new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1);
         np.setMarginStart(dp(12));
         TextView next = row(Icon.NEXT, "Next", false, v -> pageTour(i + 1));

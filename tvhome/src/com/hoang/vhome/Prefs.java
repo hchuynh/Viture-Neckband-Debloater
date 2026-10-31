@@ -15,7 +15,7 @@ final class Prefs {
     static final String ADB_NEXT_BOOT = "vnd_adb_next_boot";     // 1: turn Wireless debugging on at the next startup, once
     static final String ADB_POPUP = "vnd_adb_popup";             // 1: show the debugging address as soon as it is known
     static final String KEYMAP = "vnd_keymap";                   // "keycode=action,..."; unset = Menu opens the panel
-    static final String LEGACY_MENU_KEY = "vnd_menu_key";        // 1.4/1.5 setting, still honoured if KEYMAP is unset
+    static final String LEGACY_MENU_KEY = "vnd_menu_key";        // 0.5/0.6 setting, still honoured if KEYMAP is unset
     static final String ADB_WIFI = "adb_wifi_enabled";
     static final String EDGE = "vnd_edge_controls";              // 1 (default): edge scrollbar and media bar
     static final String HOME_MODE = "vnd_home_mode";             // 0 (default) Google TV, 1 Android home, 2 Viture 3D home

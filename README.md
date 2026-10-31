@@ -334,16 +334,16 @@ Android installs only apps that carry a digital signature. The signature does no
 - **The APK does not contain the private key.** It carries a signature and the maintainer's *public* certificate, which only let Android check who signed it; neither can be used to sign another app. Sharing the APK is safe.
 - **The maintainer's private key is not in this repository and never will be.** Anyone holding it could publish fake updates that Android would accept over your copy. `.gitignore` blocks key files from being committed.
 - **You can check the signature yourself.** With the Android build tools: `apksigner verify --print-certs tvhome/TVHome.apk`. The official build's certificate SHA-256 fingerprint is
-  `f3b8e7b88ac32dcdf4315f0250ce0003933d1685059b45979d0dbd38cc2c4287`.
+  `ef3dac4a5106867af16d63b4a3bbed9ecf48791c9c454b06415aba150dfb88f0` (from 1.0.0; the 0.x versions used `f3b8e7b88ac32dcdf4315f0250ce0003933d1685059b45979d0dbd38cc2c4287`, so moving from 0.x to 1.0.0 needs `./vnd.sh tvhome install`, which reinstalls the app and keeps its settings; in-app updates work from 1.0.0 on).
 - **If you build the app from source**, `tvhome/build.sh` creates a key of your own (`tvhome/tvhome.keystore`). Keep it if you want to update your own build later. Because your key differs from the maintainer's, Android refuses to install your build over the official one; `tvhome install` detects this, uninstalls the old copy and installs yours.
 
 ### Downloading the APK
 
-Every [GitHub release](https://github.com/hchuynh/Viture-Neckband-Debloater/releases) has the matching TV Home build attached as `TVHome-<version>.apk` (for example `TVHome-1.7.0.apk` on v1.7.0). It is the same file as `tvhome/TVHome.apk` in that release's source, signed with the certificate above. Check it before installing:
+Every [GitHub release](https://github.com/hchuynh/Viture-Neckband-Debloater/releases) has the matching TV Home build attached as `TVHome-<version>.apk` (for example `TVHome-1.0.0.apk` on v1.0.0). It is the same file as `tvhome/TVHome.apk` in that release's source, signed with the certificate above. Check it before installing:
 
 ```bash
-apksigner verify --print-certs TVHome-1.7.0.apk | grep SHA-256
-# must print f3b8e7b88ac32dcdf4315f0250ce0003933d1685059b45979d0dbd38cc2c4287
+apksigner verify --print-certs TVHome-1.0.0.apk | grep SHA-256
+# must print ef3dac4a5106867af16d63b4a3bbed9ecf48791c9c454b06415aba150dfb88f0
 ```
 
 **The recommended way to install it is still `./vnd.sh tvhome install`**: it installs the app, grants every permission, journals the previous home app and accessibility settings so you can roll back, and removes everything with `tvhome uninstall`.
@@ -351,7 +351,7 @@ apksigner verify --print-certs TVHome-1.7.0.apk | grep SHA-256
 Installing the downloaded file by hand works too, but the app only becomes useful once the permissions below are granted, and nothing is journaled:
 
 ```bash
-adb install -r TVHome-1.7.0.apk
+adb install -r TVHome-1.0.0.apk
 adb shell pm grant com.hoang.vhome android.permission.WRITE_SECURE_SETTINGS
 adb shell appops set com.hoang.vhome GET_USAGE_STATS allow
 adb shell appops set com.hoang.vhome SYSTEM_ALERT_WINDOW allow
@@ -433,7 +433,7 @@ Leave Wireless debugging off when you are not using a computer: anyone you paire
 
 ### Welcome tour and updates
 
-The first time TV Home runs (and once after updating to 1.9.0), a short tour explains the controls button, the edge controls, the hiding cursor and Settings. Its last page asks whether TV Home may check for updates; the answer can be changed any time in About, where the tour can also be replayed.
+The first time TV Home runs (and once after updating to 1.0.0), a short tour explains the controls button, the edge controls, the hiding cursor and Settings. Its last page asks whether TV Home may check for updates; the answer can be changed any time in About, where the tour can also be replayed.
 
 With automatic checks on, TV Home reads the latest release of this repository on GitHub at most once a day. When a newer version exists, a popup offers **Update**, **Not now** or **Skip this version** (never asked again for that version), and the Settings footer shows *Update available* on the right. *Update* downloads `TVHome-<version>.apk` from the release and hands it to Android, which shows its own confirmation and installs the file only if it carries the same signature as the installed app. `./vnd.sh tvhome install` grants the install permission; a copy installed by hand asks once to allow installing apps.
 
@@ -644,7 +644,7 @@ Environment
 | Volume keys do nothing | Head gaze is on (Viture behavior). Use the floating ☰ button → Volume, or switch head gaze off. |
 | Hand gestures came back | A double press on the Settings key toggles them: double press again. After a reboot they are switched off automatically once `apply gestures` has run with TV Home installed. |
 | No cursor in the plain interface | Head gaze is off. Use the floating ☰ button → Head gaze, or `apply gestures`. |
-| The ☰ button is missing | It is invisible until the cursor hovers over its spot, just left of Back/Home/Recents. If it never appears after a reboot, you are on TV Home 1.5.0 or older, whose service is switched off by the firmware at boot: run `tvhome install` again to get the current version, which restores it by itself. |
+| The ☰ button is missing | It is invisible until the cursor hovers over its spot, just left of Back/Home/Recents. If it never appears after a reboot, you are on TV Home 0.6.0 or older, whose service is switched off by the firmware at boot: run `tvhome install` again to get the current version, which restores it by itself. |
 | Close app did nothing | Recents took longer than usual to open. Press it again; on a slow first launch after boot this can happen once. |
 | A Bluetooth controller stopped working | Roll back the `experimental` journal or `configure` → set `com.eden.vaservice` to stock. |
 | An app you need is missing | It was disabled. `configure`, set it to stock, `apply`. |

@@ -6,7 +6,7 @@
 #  Works with bash 3.2+ (macOS default) and Linux.
 # =============================================================================
 set -u
-VERSION="1.9.0"
+VERSION="1.0.0"
 ROOT="$(cd "$(dirname "$0")" && pwd)"
 LISTS="$ROOT/lists"
 STATE="$ROOT/state"
