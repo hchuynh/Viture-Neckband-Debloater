@@ -472,9 +472,9 @@ It scrolls the largest scrollable area of the app in front, so it works in lists
 
 **Media bar**
 
-<p align="center"><img src="docs/img/edge-media.png" alt="The media bar: previous, back, play/pause, forward, next" width="420"></p>
+<p align="center"><img src="docs/img/edge-media.png" alt="The media bar: scroll up above; previous, back, play/pause, forward, next; scroll down below" width="400"></p>
 
-Previous, skip back, play/pause, skip forward, next, with a **scroll up** button centred above the bar and a **scroll down** button below it: in YouTube Shorts and similar feeds they move to the previous or next clip without leaving the media controls (the bar picture predates them). When nothing plays it stays hidden. In YouTube, which ignores the standard skip keys, the skip buttons double-tap the left or right part of the player, exactly as you would with a finger (10 seconds by default, adjustable in YouTube's settings); other apps get the standard media keys and choose their own skip length.
+Previous, skip back, play/pause, skip forward, next, with a **scroll up** button centred above the bar and a **scroll down** button below it: in YouTube Shorts and similar feeds they move to the previous or next clip without leaving the media controls. When nothing plays it stays hidden. In YouTube, which ignores the standard skip keys, the skip buttons double-tap the left or right part of the player, exactly as you would with a finger (10 seconds by default, adjustable in YouTube's settings); other apps get the standard media keys and choose their own skip length.
 
 Both stay open while you use them (pressing a media button never closes them), and close on a click anywhere else or 2 seconds after the cursor was last on them. A cursor that only sweeps past the edge does not open them: it has to rest there for a moment. Switch the feature off in Settings if you never want it. Neckband buttons cannot open them, because Viture keeps the volume buttons for itself while head gaze is on.
 

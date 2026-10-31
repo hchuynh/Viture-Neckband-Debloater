@@ -156,10 +156,11 @@ final class EdgeControls {
             col.setOrientation(LinearLayout.VERTICAL);
             col.setGravity(Gravity.CENTER_HORIZONTAL);
             col.addView(feedButton(Icon.UP, -1), feedLp(false));
-            col.addView(row);
+            col.addView(row, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT));
             col.addView(feedButton(Icon.DOWN, 1), feedLp(true));
-            mediaBar.addView(col);
-            WindowManager.LayoutParams ml = params(WindowManager.LayoutParams.WRAP_CONTENT, WindowManager.LayoutParams.WRAP_CONTENT);
+            mediaBar.addView(col, new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.WRAP_CONTENT));
+            // explicit width: a wrap-content window is first measured at dialog width, which squeezed the row
+            WindowManager.LayoutParams ml = params(dp(5 * 66 + 20), WindowManager.LayoutParams.WRAP_CONTENT);
             ml.flags |= WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH;
             ml.gravity = Gravity.CENTER;
             wm.addView(mediaBar, ml);
