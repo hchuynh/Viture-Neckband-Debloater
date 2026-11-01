@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.1.0 (2026-11-01)
+
+- TV Home 1.1.0, **profiles**: Standard, Cinema, Work, Airplane and Custom, chosen from the new last row of the ☰ panel (with a › and the profile's switches as icons). Each sets head gaze and gestures (now and at startup), Wi-Fi, Bluetooth and two automatic rules: **watch mode** (head gaze steps aside during full-screen video; a volume button, or switching it on any other way, brings it back, and it steps aside again after the pointer rests 3 seconds) and the **keyboard or mouse rule** (head gaze off while one is connected). Choosing a profile closes the list; changing head gaze or gestures in Settings turns it into Custom.
+- **Panel header**: Wi-Fi and Bluetooth switches and a battery estimate. TV Home now targets Android 9 (API 28), the only way Android lets an app switch the radios; it runs normally on Android 13.
+- **Hold volume up** (Viture sends Home for it): opens the scroll and media controls in the centre (default), the panel in the centre, or goes Home, chosen in Settings. The taskbar Home button still goes home.
+- **Tailscale switch** under Wireless debugging in developer mode, when Tailscale is installed.
+- **Edge scrolling**: one target per opening (vertical lists at the centre first), explicit up/down commands, and a background worker that skips steps while the app is busy, which fixes dead clicks, delayed bursts and double-click to the top on YouTube home.
+- Hover and press feedback on every item; the ☰ button always fades, also when the pointer stops on it or during full-screen video.
+- Battery: events are requested only while a feature needs them; watch mode does nothing with the screen off. Measured idle cost: 0 CPU ticks per minute, about 19 MB of memory, no wakelocks.
+- Tests: 81 unit checks (`tvhome/test/run-unit-tests.sh`), a read-only device smoke test (`tvhome/test/device-smoke.sh`) and a manual regression checklist ([docs/TESTING.md](docs/TESTING.md)).
+- New settings `vnd_profile`, `vnd_profile_custom` and `vnd_hold_volume_up`, journaled and removed with `tvhome uninstall`.
+
 ## 1.0.0 (2026-10-31)
 
 First stable release. Earlier releases are renumbered as 0.x (formerly 1.0 to 1.8): v1.4.0 → v0.5.0, v1.5.0 → v0.6.0, v1.6.0 → v0.7.0, v1.7.0 → v0.8.0, v1.8.0 → v0.9.0.

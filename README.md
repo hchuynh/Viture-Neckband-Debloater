@@ -293,16 +293,18 @@ T bloat        com.meig.logger                    # [safe] Diagnostic logger fro
 
 ### The helper app in one minute
 
-**TV Home** (`com.hoang.vhome`, about 20 KB) is a small companion app that ships with VND in [tvhome/](tvhome/), source code included. VND's script changes settings; TV Home adds the few things a settings change cannot do. It has six parts:
+**TV Home** (`com.hoang.vhome`, about 65 KB) is a small companion app that ships with VND in [tvhome/](tvhome/), source code included. VND's script changes settings; TV Home adds the few things a settings change cannot do:
 
 | Part | What it does | Why it is needed |
 |---|---|---|
 | **Home toggle** | Home opens Google TV; Home again opens the stock app list | Android only lets a real home app decide what Home opens |
 | **Head gaze and gestures at startup** | Switches Headgaze Navigation on, and hand gestures off if you chose so, at every boot | Viture's firmware resets both at each restart |
 | **Head gaze button** | A quick-settings button to switch head tracking on and off | Viture disables volume keys while head gaze is on |
-| **Floating controls** | A hidden ☰ button in the taskbar, also opened by a controller's Menu key, with Close app, Close all, Notifications, Volume, Head gaze and Settings | The plain interface relies on swipes and drags a head-gaze cursor cannot perform |
+| **Floating controls** | A hidden ☰ button in the taskbar, also opened by a controller's Menu key, with Wi-Fi, Bluetooth and battery at the top, Close app, Close all, Notifications, Volume, Head gaze, Settings and Profile | The plain interface relies on swipes and drags a head-gaze cursor cannot perform |
+| **Hold volume up** | Holding the neckband's volume-up button opens the scroll and media controls (or the panel) in the middle of the view, from anywhere | Reaching a corner or an edge with your head every time is slow |
+| **Profiles** | Standard, Cinema, Work, Airplane and Custom: one click sets head gaze, gestures, Wi-Fi, Bluetooth and two automatic rules (head gaze steps aside during full-screen video, or while a keyboard or mouse is connected) | Bed, commute and desk need different setups |
 | **Edge controls** | A scrollbar on the left or right edge, and a media bar while something plays | Head gaze can click but cannot drag, so long lists and pages are hard to scroll |
-| **Settings popup** | Startup choices, Wireless debugging with its address, edge controls, sleep timer, button remapping, About | Changing these otherwise needs a computer and adb |
+| **Settings popup** | Home choice, volume-up hold, startup choices, Wireless debugging with its address (and Tailscale, if installed), edge controls, sleep timer, button remapping, About | Changing these otherwise needs a computer and adb |
 | **Welcome tour and updates** | A short tour on first use; optional daily check for a new version on GitHub, installed after your confirmation | Sideloaded apps get no store updates |
 
 It has no app screen of its own (everything lives in the panel), no background activity beyond the startup check, no analytics, and it stores nothing. Its only internet use is the optional update check, **off by default**: once a day it reads the public page of this repository's latest release on GitHub, and nothing about you or the device is sent.
@@ -321,6 +323,7 @@ It has no app screen of its own (everything lives in the panel), no background a
 | **Network state** (`ACCESS_NETWORK_STATE`, granted automatically) | Showing the neckband's Wi-Fi and VPN addresses next to Wireless debugging. This is not internet access | Uninstall the app |
 | **Internet** (`INTERNET`, granted automatically) | Only the update check and download, from `api.github.com` and GitHub's release files. Nothing is contacted while *Check for updates automatically* is off, unless you press *Check now* | Switch the check off in About |
 | **Install apps** (`REQUEST_INSTALL_PACKAGES`) | Handing a downloaded update to Android's installer, which asks you to confirm and accepts only a file signed with the same key | Settings → Apps → Special app access → Install unknown apps |
+| **Wi-Fi and Bluetooth** (`CHANGE_WIFI_STATE`, `ACCESS_WIFI_STATE`, `BLUETOOTH`, `BLUETOOTH_ADMIN`, granted automatically) | The Wi-Fi and Bluetooth switches at the top of the panel and in the profiles. Android lets apps switch the radios directly only when they target Android 9, so TV Home targets API 28; it runs normally on the neckband's Android 13 | Uninstall the app |
 | **Accessibility service** "TV Home controls" | Drawing the controls over full-screen apps, performing the Recents swipe to close apps, opening notifications, listening for the buttons you remap, reading the port on the Wireless debugging page | Settings → Accessibility → TV Home controls |
 | **Quick-settings tile** | The Head gaze button in the pull-down panel | Edit the quick-settings panel |
 
@@ -339,10 +342,10 @@ Android installs only apps that carry a digital signature. The signature does no
 
 ### Downloading the APK
 
-Every [GitHub release](https://github.com/hchuynh/Viture-Neckband-Debloater/releases) has the matching TV Home build attached as `TVHome-<version>.apk` (for example `TVHome-1.0.0.apk` on v1.0.0). It is the same file as `tvhome/TVHome.apk` in that release's source, signed with the certificate above. Check it before installing:
+Every [GitHub release](https://github.com/hchuynh/Viture-Neckband-Debloater/releases) has the matching TV Home build attached as `TVHome-<version>.apk` (for example `TVHome-1.1.0.apk` on v1.1.0). It is the same file as `tvhome/TVHome.apk` in that release's source, signed with the certificate above. Check it before installing:
 
 ```bash
-apksigner verify --print-certs TVHome-1.0.0.apk | grep SHA-256
+apksigner verify --print-certs TVHome-1.1.0.apk | grep SHA-256
 # must print ef3dac4a5106867af16d63b4a3bbed9ecf48791c9c454b06415aba150dfb88f0
 ```
 
@@ -351,7 +354,7 @@ apksigner verify --print-certs TVHome-1.0.0.apk | grep SHA-256
 Installing the downloaded file by hand works too, but the app only becomes useful once the permissions below are granted, and nothing is journaled:
 
 ```bash
-adb install -r TVHome-1.0.0.apk
+adb install -r TVHome-1.1.0.apk
 adb shell pm grant com.hoang.vhome android.permission.WRITE_SECURE_SETTINGS
 adb shell appops set com.hoang.vhome GET_USAGE_STATS allow
 adb shell appops set com.hoang.vhome SYSTEM_ALERT_WINDOW allow
@@ -383,35 +386,71 @@ TV Home has no interface of its own and uses practically no resources. It needs 
 
 The plain Android interface relies on gestures a head-gaze cursor cannot perform: closing an app means swiping its card up in Recents, and the notification shade only opens with a drag from the top edge. Full-screen apps also hide the taskbar.
 
-TV Home adds a **☰ button** in the taskbar row, just left of Back, Home and Recents, in the same shape and color. It is **invisible until you move the cursor onto its spot**, then fades in; it fades out again about 1.5 seconds after the cursor leaves. It works the same over full-screen apps that hide the taskbar, without covering them. Click it to open a panel above it:
+TV Home adds a **☰ button** in the taskbar row, just left of Back, Home and Recents, in the same shape and color. It is **invisible until you move the cursor onto its spot**, then fades in; it fades out again about 2.5 seconds after the cursor stops moving over it, also when head gaze is switched off with the pointer still on it. It works the same over full-screen apps that hide the taskbar, without covering them. Click it to open a panel above it:
 
 <p align="center"><img src="docs/img/button-hover.png" alt="The control button is invisible at rest and appears when the cursor reaches its spot next to Back, Home and Recents" width="640"></p>
 <p align="center"><img src="docs/img/panel.png" alt="The control panel" width="300"></p>
 
+Every item highlights while the pointer is over it and flashes when pressed, so you always see what a click will hit.
+
 | Button | What it does |
 |---|---|
+| **Wi-Fi · Bluetooth · battery** (top) | Switch Wi-Fi and Bluetooth on or off (filled when on, slashed when off). The battery shows "charging", or an estimate such as "72% · 2 h 40 min" worked out from the remaining charge and the current drain |
 | **Close app** | Closes the app you are using (opens Recents, swipes its card up, returns Home) |
 | **Close all apps** | Clears Recents (uses Android's Clear all button when available, otherwise swipes each card) |
 | **Notifications** | Opens the shade, with notifications and quick settings together (on this device both open the same shade) |
 | **Vol − / Vol +** | Changes media volume, also while head gaze has the volume keys disabled |
 | **Head gaze** | The switch on the right shows the current state; click the row to change it |
 | **Settings** | Opens the Settings popup described below |
+| **Profile** › | The active profile and its switches as icons; opens the profile list (see [Profiles](#profiles)) |
 
 The panel stays open until you **click outside it**, **click the ☰ button again** or press **Back**. Volume and Head gaze keep it open, so you can press Vol + several times in a row; the other buttons close it because they take you somewhere else. A click outside the panel also reaches whatever is underneath, as with any Android overlay, so click an empty area to close it.
 
 **From an external controller.** The **Menu** key opens and closes the panel too. Touchpad remotes such as the CheerTouch have a dedicated Menu button, which modern Android apps ignore, so nothing is lost by giving it this job. The key is consumed and does not also reach the app underneath. You can give it another job, or give this job to another button, under **Settings → Buttons**.
 
+### Hold volume up
+
+With head gaze on, Viture uses the neckband buttons itself: **volume down** is the mouse button (hold it to drag), a short press of **volume up** is Back, and **holding volume up** is Home. TV Home is the Home app, so it gets that hold and can give it a better job, reachable wherever you are looking:
+
+| Settings → Hold volume up | Holding volume up |
+|---|---|
+| **Scroll and media** (default) | Brings the app in front straight back and opens, in the middle of the view, the media bar with ▲ above and ▼ below while something plays, or only ▲ and ▼ when nothing plays, plus the scrollbar on the right. They close about 2 seconds after the pointer leaves them |
+| **Quick menu** | Opens the ☰ panel in the middle of the view |
+| **Home** | Goes home, as on stock Viture |
+
+Holding again closes what the first hold opened. The taskbar Home button and TV Home's own Home actions still go home: TV Home recognises the taskbar click that comes just before them. Android shows the home screen for an instant before the app comes back, a short flicker that cannot be avoided.
+
+### Profiles
+
+<p align="center"><img src="docs/img/profiles.png" alt="Profile list: Standard, Cinema, Work, Airplane and Custom, each with its switches as icons" width="480"></p>
+
+A profile is a combination of six switches, shown as icons on every profile (slashed when off): head gaze, hand gestures, watch mode, keyboard or mouse rule, Wi-Fi and Bluetooth. Choosing one applies it at once and closes the list; head gaze and gestures also stay that way after a restart.
+
+| Profile | On | Off |
+|---|---|---|
+| **Standard** | Head gaze, Wi-Fi, Bluetooth | Gestures, watch mode, keyboard or mouse rule |
+| **Cinema** | Head gaze, watch mode, Wi-Fi, Bluetooth | Gestures, keyboard or mouse rule |
+| **Work** | Head gaze, keyboard or mouse rule, Wi-Fi, Bluetooth | Gestures, watch mode |
+| **Airplane** | Head gaze | Everything else |
+| **Custom** | Your choice: *Edit ›* opens a switch for each item, then *Save and activate* | |
+
+- **Watch mode.** While a video plays full screen, head gaze switches off within about 2 seconds, so the pointer stops drifting. A neckband volume button (or any other way of switching head gaze on) brings it back; once the pointer has rested for 3 seconds, watch mode steps aside again. Leaving full screen gives head gaze back. It only looks at the screen while something plays and the screen is on.
+- **Keyboard or mouse rule.** When an external keyboard, mouse or trackpad connects, head gaze switches off; it comes back when the last one disconnects. The glasses' own camera and the neckband buttons do not count. Android announces connected devices, so nothing runs in the background.
+- Changing head gaze or gestures in Settings turns the active profile into Custom, so the label never disagrees with the device.
+
 ### The Settings popup
 
-<p align="center"><img src="docs/img/settings.png" alt="TV Home settings: startup choices, Wireless debugging, Buttons and About" width="640"></p>
+<p align="center"><img src="docs/img/settings.png" alt="TV Home settings: Home button, Hold volume up, startup choices, cursor, controls and buttons" width="640"></p>
 
 | Setting | What it does |
 |---|---|
+| **Hold volume up** | *Scroll and media* (default), *Quick menu* or *Home*; see [Hold volume up](#hold-volume-up) |
 | **Home button opens** | *Google TV* (default), *Android home* or *Viture 3D*. Home opens the one you choose; pressing Home again while it is in front opens its partner (Google TV and the Android home swap with each other; Viture 3D swaps with the Android home). *Viture 3D* brings back the original experience, at the cost of the 3D home's battery use (about one processor core); it is offered only when Viture's launcher is installed and enabled |
 | **At startup: Head gaze** | On by default. Switch it off if you prefer to start without head tracking |
 | **At startup: Hand gestures** | On is Viture's default. Off switches the gesture camera off at once and keeps it off after every restart, the biggest single battery saving (the same flag `apply gestures` sets) |
 | **`</>`** (top right) | Shows or hides the Wireless debugging row below. Hidden by default, since everyday users never need it. It only changes what TV Home shows: Android's Developer options and Wireless debugging itself are not touched |
 | **Wireless debugging** (with `</>` on) | Switches it on or off now; the line below shows the neckband's addresses (Wi-Fi first, then VPN such as Tailscale) and the port. Android does not let apps read the port, so TV Home briefly opens the system Wireless debugging page behind the popup, reads its "IP address & Port" line and steps back (only while the row is shown). It also picks the port up whenever you open that page yourself |
+| **Tailscale** (with `</>` on, only when Tailscale is installed) | Connects or disconnects Tailscale with the switch Tailscale offers to automation apps, and shows *Connected* or *Off*. Handy when you reach the neckband's Wireless debugging over Tailscale. TV Home cannot see whether Tailscale is logged in: if it is not, the switch does nothing |
 | *(advanced)* Wireless debugging after the next restart | `adb shell settings put global vnd_adb_next_boot 1` before rebooting: TV Home turns it on once after the restart and shows the new address and port on screen |
 | **Cursor: Hide when still** | On by default; see below |
 | **Controls: Edge controls** | On by default; see below |
@@ -466,7 +505,7 @@ Head gaze can point and click but not drag, which makes long lists, web pages an
 - **Double-click** a half to jump to the top or the bottom.
 - **Press and drag** along it to scroll continuously; the further you drag, the faster it goes.
 
-It scrolls the largest scrollable area of the app in front, so it works in lists, settings, web pages and app stores alike.
+It scrolls the main list of the app in front: the one that scrolls vertically and covers the middle of the screen, chosen once when the bar opens and kept while it stays open, so it works in lists, settings, web pages and app stores alike, and sideways rows (YouTube's Shorts and topic chips) do not steal it. Scroll commands run one at a time in the background: when an app is busy (YouTube loading previews), steps are skipped instead of piling up and arriving all at once.
 
 <br clear="right">
 
@@ -697,6 +736,7 @@ Contributions are welcome, especially measurements from other firmware versions.
 - **Do not add** VITURE firmware files, extracted APKs, logos, screenshots of copyrighted UI or text copied from VITURE documentation. Link to public sources and paraphrase.
 - **Screenshots** in `docs/img/` show only VND and TV Home over neutral Android screens. Any screenshot with third-party content (posters, artwork, other brands' icons) or personal data (account names, network names, profile pictures) must be blurred before it is committed.
 - Keep `vnd.sh` compatible with bash 3.2 (macOS default) and run `shellcheck` before submitting.
+- **TV Home changes** pass the three test layers in [docs/TESTING.md](docs/TESTING.md): `tvhome/test/run-unit-tests.sh`, the read-only `tvhome/test/device-smoke.sh` on a neckband, and the manual checklist with the glasses on.
 
 ---
 
