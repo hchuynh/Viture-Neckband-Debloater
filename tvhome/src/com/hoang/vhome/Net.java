@@ -12,7 +12,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Wireless debugging state and address, read locally. TV Home has no internet permission.
+ * Wireless debugging state and address, read locally, and the optional Tailscale switch.
  * Android does not let apps read the debugging port, so the control service reads it from the
  * system's own Wireless debugging page (the "IP address & Port" line) and keeps it here.
  */
@@ -28,6 +28,30 @@ final class Net {
     }
 
     static int adbPort() { return port; }
+
+    // Tailscale: its app accepts these broadcasts to connect and disconnect (the ones automation apps use)
+    static final String TAILSCALE = "com.tailscale.ipn";
+
+    static boolean tailscaleInstalled(Context c) {
+        try { c.getPackageManager().getApplicationInfo(TAILSCALE, 0); return true; } catch (Exception e) { return false; }
+    }
+
+    /** True while a VPN is up. Tailscale is the only VPN expected on the neckband. */
+    static boolean vpnOn(Context c) {
+        ConnectivityManager cm = c.getSystemService(ConnectivityManager.class);
+        if (cm == null) return false;
+        for (Network n : cm.getAllNetworks()) {
+            NetworkCapabilities nc = cm.getNetworkCapabilities(n);
+            if (nc != null && nc.hasTransport(NetworkCapabilities.TRANSPORT_VPN)) return true;
+        }
+        return false;
+    }
+
+    static void setTailscale(Context c, boolean on) {
+        Intent i = new Intent(on ? "com.tailscale.ipn.CONNECT_VPN" : "com.tailscale.ipn.DISCONNECT_VPN")
+            .setComponent(new ComponentName(TAILSCALE, "com.tailscale.ipn.IPNReceiver"));
+        try { c.sendBroadcast(i); } catch (Exception ignored) { }
+    }
 
     /** The system page that shows the address: Settings, Developer options, Wireless debugging. */
     static Intent pageIntent() {

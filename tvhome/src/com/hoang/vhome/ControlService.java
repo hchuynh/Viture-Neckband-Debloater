@@ -96,7 +96,7 @@ public class ControlService extends AccessibilityService {
         switch (a) {
             case Prefs.A_PANEL: reveal(); togglePanel(); break;
             case Prefs.A_BACK: performGlobalAction(GLOBAL_ACTION_BACK); break;
-            case Prefs.A_HOME: performGlobalAction(GLOBAL_ACTION_HOME); break;
+            case Prefs.A_HOME: goHome(); break;
             case Prefs.A_RECENTS: performGlobalAction(GLOBAL_ACTION_RECENTS); break;
             case Prefs.A_NOTIFICATIONS: performGlobalAction(GLOBAL_ACTION_NOTIFICATIONS); break;
             case Prefs.A_CLOSE_APP: closeApp(); break;
@@ -114,6 +114,13 @@ public class ControlService extends AccessibilityService {
 
     @Override public void onAccessibilityEvent(AccessibilityEvent e) {
         CharSequence pkg = e.getPackageName();
+        if (e.getEventType() == AccessibilityEvent.TYPE_VIEW_CLICKED) {
+            // the taskbar Home button: its Home press is a real Home, not the neckband hold
+            CharSequence d = e.getContentDescription();
+            if (pkg != null && "com.android.launcher3".contentEquals(pkg) && d != null && "Home".contentEquals(d))
+                launcherHomeClickAt = SystemClock.uptimeMillis();
+            return;
+        }
         if (autoGaze != null && e.getEventType() == AccessibilityEvent.TYPE_VIEW_HOVER_ENTER) autoGaze.activity();
         if (hider != null && (e.getEventType() == AccessibilityEvent.TYPE_VIEW_HOVER_ENTER
                 || e.getEventType() == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED)) hider.activity();
@@ -228,7 +235,25 @@ public class ControlService extends AccessibilityService {
     @Override public void onInterrupt() { }
 
     // ------------------------------------------------------------------ lifecycle
+    static ControlService instance;   // for HomeActivity: the volume-up hold opens the controls
+
+    private long launcherHomeClickAt = 0, ownHomeAt = 0;
+
+    /** A Home key press that neither the taskbar Home button nor TV Home itself caused: the neckband hold. */
+    boolean homeIsNeckbandHold() {
+        long now = SystemClock.uptimeMillis();
+        return now - launcherHomeClickAt > 1500 && now - ownHomeAt > 2000;
+    }
+
+    void showQuickControls() {
+        if (edge == null) return;
+        h.post(() -> { if (edge.isOpen()) edge.hideAll(); else edge.openQuick(); });
+    }
+
+    private void goHome() { ownHomeAt = SystemClock.uptimeMillis(); performGlobalAction(GLOBAL_ACTION_HOME); }
+
     @Override protected void onServiceConnected() {
+        instance = this;
         wm = getSystemService(WindowManager.class);
         keymap = Prefs.keymap(this);
         observer = new Observer(this, h);
@@ -565,6 +590,7 @@ public class ControlService extends AccessibilityService {
         if (info != null) {
             if (on || (autoGaze != null && autoGaze.wantsHover())) info.eventTypes |= AccessibilityEvent.TYPE_VIEW_HOVER_ENTER;
             else info.eventTypes &= ~AccessibilityEvent.TYPE_VIEW_HOVER_ENTER;
+            info.eventTypes |= AccessibilityEvent.TYPE_VIEW_CLICKED;   // to recognise the taskbar Home button
             setServiceInfo(info);
         }
         hider.setEnabled(on);
@@ -581,6 +607,7 @@ public class ControlService extends AccessibilityService {
             if (observer != null) getContentResolver().unregisterContentObserver(observer);
             if (edge != null) edge.stop();
             if (autoGaze != null) autoGaze.stop();
+            instance = null;
             if (hider != null) hider.setEnabled(false);
             h.removeCallbacks(sleepNow);
             h.removeCallbacks(updateTick);
@@ -769,9 +796,13 @@ public class ControlService extends AccessibilityService {
     private TextView adbLine;
     private final Runnable refreshAdb = new AdbRefresher(this);
 
+    private TextView tailscaleLine;
+    private String tailscaleText() { return Net.vpnOn(this) ? "Connected" : "Off"; }
+
     void refreshAdbNow() {
         if (adbLine == null || popup == null) return;
         adbLine.setText(adbText());
+        if (tailscaleLine != null) tailscaleLine.setText(tailscaleText());
         h.postDelayed(refreshAdb, 1500);
     }
 
@@ -810,6 +841,10 @@ public class ControlService extends AccessibilityService {
             homeOptions(), Prefs.getInt(this, Prefs.HOME_MODE, 0),
             i -> Prefs.putInt(this, Prefs.HOME_MODE, i)));
         target.addView(home, cellLp());
+        // what holding the neckband volume up does (Viture sends Home for it while head gaze is on)
+        target.addView(cell(Icon.SCROLL, "Hold volume up", null, segmented(
+            new String[]{"Scroll and media", "Home"}, Prefs.getInt(this, Prefs.HOLD_UP, 1) == 1 ? 0 : 1,
+            i -> Prefs.putInt(this, Prefs.HOLD_UP, i == 0 ? 1 : 0))), cellLp());
         target.addView(cols);
 
         target = left;
@@ -862,6 +897,14 @@ public class ControlService extends AccessibilityService {
             return Net.adbWifiOn(this); }));
         adbLine = subtitleOf(adb);
         target.addView(adb, cellLp());
+        tailscaleLine = null;
+        if (Net.tailscaleInstalled(this)) {   // only for people who reach the neckband over Tailscale
+            LinearLayout ts = cell(Icon.WIFI, "Tailscale", tailscaleText(), toggle(Net.vpnOn(this), on -> {
+                Net.setTailscale(this, on);
+                return on; }));
+            tailscaleLine = subtitleOf(ts);
+            target.addView(ts, cellLp());
+        }
         h.removeCallbacks(refreshAdb);
         h.post(refreshAdb);
         if (Net.adbWifiOn(this) && Net.adbPort() == 0 && !portTried) h.postDelayed(this::readPortBehind, 300);
@@ -1243,7 +1286,7 @@ public class ControlService extends AccessibilityService {
 
     private void closeApp() {
         performGlobalAction(GLOBAL_ACTION_RECENTS);
-        h.postDelayed(() -> swipeUp(() -> h.postDelayed(() -> performGlobalAction(GLOBAL_ACTION_HOME), 500)), 900);
+        h.postDelayed(() -> swipeUp(() -> h.postDelayed(() -> goHome(), 500)), 900);
     }
 
     private void closeAll() {
@@ -1257,14 +1300,14 @@ public class ControlService extends AccessibilityService {
             List<AccessibilityNodeInfo> clear = root.findAccessibilityNodeInfosByViewId("com.android.launcher3:id/clear_all");
             for (AccessibilityNodeInfo c : clear) {
                 if (c.isVisibleToUser() && c.performAction(AccessibilityNodeInfo.ACTION_CLICK)) {
-                    h.postDelayed(() -> performGlobalAction(GLOBAL_ACTION_HOME), 600);
+                    h.postDelayed(() -> goHome(), 600);
                     return;
                 }
             }
             boolean inRecents = root.getPackageName() != null && "com.android.launcher3".contentEquals(root.getPackageName());
             if (!inRecents) return;   // Recents closed itself: nothing left
         }
-        if (n >= 20) { performGlobalAction(GLOBAL_ACTION_HOME); return; }
+        if (n >= 20) { goHome(); return; }
         swipeUp(() -> h.postDelayed(() -> clearStep(n + 1), 450));
     }
 

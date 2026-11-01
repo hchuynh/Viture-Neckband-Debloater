@@ -22,9 +22,38 @@ public class HomeActivity extends Activity {
         super.onCreate(b);
         // Home starts first after boot: switch head gaze on right away, before the boot broadcast arrives.
         if (SystemClock.elapsedRealtime() < 5 * 60 * 1000) BootReceiver.apply(this);
-        route(); finish();
+        handle(getIntent());
     }
-    @Override protected void onNewIntent(Intent i) { super.onNewIntent(i); route(); finish(); }
+    @Override protected void onNewIntent(Intent i) { super.onNewIntent(i); handle(i); }
+
+    /**
+     * With head gaze on, Viture turns a hold of the neckband volume up button into a Home key press.
+     * Unless the owner chose Home for it, that press opens TV Home's scroll and media controls over
+     * the app in front instead. Home presses TV Home can attribute elsewhere (the taskbar Home button,
+     * TV Home's own actions) and Home reached without the key (closing the last app) still go home.
+     */
+    private void handle(Intent i) {
+        ControlService cs = ControlService.instance;
+        boolean fromKey = i != null && i.getBooleanExtra("android.intent.extra.FROM_HOME_KEY", false);
+        if (fromKey && cs != null && Prefs.getInt(this, Prefs.HOLD_UP, 1) == 1 && cs.homeIsNeckbandHold()) {
+            // Android already moved the home screen forward: bring the app that was in front straight back
+            // (the Android home screen is what Android shows now, so it needs nothing)
+            String fg = lastForeground();
+            Intent back = null;
+            if (VITURE.equals(fg)) back = new Intent("com.viture.action.VITURE_LAUNCHER").setPackage(VITURE);
+            else if (fg != null && !LAUNCHER.getPackageName().equals(fg)) back = getPackageManager().getLaunchIntentForPackage(fg);
+            if (back != null) {
+                back.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED);
+                try { startActivity(back); } catch (Exception ignored) { }
+            }
+            finish();
+            overridePendingTransition(0, 0);
+            cs.showQuickControls();
+            return;
+        }
+        route();
+        finish();
+    }
 
     static final String VITURE = "com.viture.launcher";
 

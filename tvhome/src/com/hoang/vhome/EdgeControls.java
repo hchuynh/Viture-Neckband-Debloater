@@ -144,6 +144,17 @@ final class EdgeControls {
         hideAll();
     }
 
+    private boolean quick = false;
+
+    /** Opened by the neckband volume-up hold: the right scrollbar plus the centre controls, even with nothing playing. */
+    void openQuick() {
+        if (isOpen()) return;
+        side = Gravity.END;
+        quick = true;
+        open();
+        quick = false;
+    }
+
     private void open() {
         if (isOpen()) return;
         if (openListener != null) openListener.onOpen(true);
@@ -158,7 +169,22 @@ final class EdgeControls {
 
         // media bar in the middle of the screen, only while something is playing
         AudioManager am = s.getSystemService(AudioManager.class);
-        if (am != null && am.isMusicActive()) {
+        boolean playing = am != null && am.isMusicActive();
+        if (!playing && quick) {
+            // nothing plays: only scroll up and down, stacked in the centre
+            mediaBar = overlay();
+            LinearLayout col = new LinearLayout(s);
+            col.setOrientation(LinearLayout.VERTICAL);
+            col.setGravity(Gravity.CENTER_HORIZONTAL);
+            col.addView(feedButton(Icon.UP, -1), feedLp(false));
+            col.addView(feedButton(Icon.DOWN, 1), feedLp(true));
+            mediaBar.addView(col, new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.WRAP_CONTENT));
+            WindowManager.LayoutParams ml = params(dp(90), WindowManager.LayoutParams.WRAP_CONTENT);
+            ml.flags |= WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH;
+            ml.gravity = Gravity.CENTER;
+            wm.addView(mediaBar, ml);
+        }
+        if (playing) {
             mediaBar = overlay();
             LinearLayout row = new LinearLayout(s);
             row.setOrientation(LinearLayout.HORIZONTAL);

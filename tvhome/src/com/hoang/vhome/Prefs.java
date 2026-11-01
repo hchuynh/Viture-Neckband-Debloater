@@ -25,6 +25,7 @@ final class Prefs {
     static final String ONBOARDED = "vnd_onboarded";             // 1: the welcome tour was shown
     static final String PROFILE = "vnd_profile";                 // 0 Standard, 1 Cinema, 2 Work, 3 Airplane, 4 Custom
     static final String PROFILE_CUSTOM = "vnd_profile_custom";   // the Custom profile's switches (Profiles bits)
+    static final String HOLD_UP = "vnd_hold_volume_up";          // 1 (default): holding neckband volume up shows the scroll and media controls; 0: Home
 
     // Button actions
     static final String A_DEFAULT = "default", A_PANEL = "panel", A_BACK = "back", A_HOME = "home",
