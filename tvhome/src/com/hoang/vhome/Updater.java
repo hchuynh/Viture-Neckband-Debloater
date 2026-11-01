@@ -25,6 +25,7 @@ import org.json.JSONObject;
 final class Updater {
     static final String API = "https://api.github.com/repos/hchuynh/Viture-Neckband-Debloater/releases/latest";
     static final long DAY = 24L * 3600 * 1000;
+    static final String ASSET = "TVHome-[0-9][0-9.]*\\.apk";   // the release file the updater downloads
 
     interface Result { void done(String latest, String apkUrl, String error); }
     interface Progress { void step(String message, boolean failed); }
@@ -81,7 +82,7 @@ final class Updater {
                 JSONArray assets = j.optJSONArray("assets");
                 if (assets != null) for (int i = 0; i < assets.length(); i++) {
                     JSONObject a = assets.getJSONObject(i);
-                    if (a.getString("name").matches("TVHome-.*\\.apk")) apk = a.getString("browser_download_url");
+                    if (a.getString("name").matches(ASSET)) apk = a.getString("browser_download_url");
                 }
                 sp.edit().putLong("checked", System.currentTimeMillis()).putString("latest", latest)
                     .putString("apk", apk == null ? "" : apk).apply();

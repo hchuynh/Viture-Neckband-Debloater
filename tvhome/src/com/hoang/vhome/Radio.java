@@ -54,9 +54,15 @@ final class Radio {
         double a = Math.abs((double) cur);
         if (a < 1 || charge <= 0 || charge == Long.MIN_VALUE) return pct + "%";
         smoothedMicroAmps = smoothedMicroAmps == 0 ? a : smoothedMicroAmps * 0.7 + a * 0.3;
-        double hours = charge / smoothedMicroAmps;
+        return estimate(pct, charge, smoothedMicroAmps);
+    }
+
+    /** "72% · 2 h 40 min" from the remaining charge (µAh) and the drain (µA); just "72%" when implausible. Pure, unit tested. */
+    static String estimate(int pct, double chargeMicroAh, double drainMicroA) {
+        if (drainMicroA < 1 || chargeMicroAh <= 0) return pct + "%";
+        double hours = chargeMicroAh / drainMicroA;
         if (hours < 0.05 || hours > 48) return pct + "%";
         int mins = (int) Math.round(hours * 60);
-        return pct + "% · " + (mins >= 60 ? (mins / 60) + " h " + (mins % 60) + " min" : mins + " min");
+        return pct + "% \u00b7 " + (mins >= 60 ? (mins / 60) + " h " + (mins % 60) + " min" : mins + " min");
     }
 }

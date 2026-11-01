@@ -85,9 +85,15 @@ final class Prefs {
         ContentResolver r = c.getContentResolver();
         Map<Integer, String> m = new LinkedHashMap<>();
         String raw = Settings.Global.getString(r, KEYMAP);
+        int legacy = (raw == null || raw.equals("null")) ? Settings.Global.getInt(r, LEGACY_MENU_KEY, KeyEvent.KEYCODE_MENU) : 0;
+        return parseKeymap(raw, legacy);
+    }
+
+    /** "keycode=action,..." to a map; unset (null) falls back to the 1.4/1.5 single Menu-key setting. Pure, unit tested. */
+    static Map<Integer, String> parseKeymap(String raw, int legacyMenuKey) {
+        Map<Integer, String> m = new LinkedHashMap<>();
         if (raw == null || raw.equals("null")) {
-            int legacy = Settings.Global.getInt(r, LEGACY_MENU_KEY, KeyEvent.KEYCODE_MENU);
-            if (legacy > 0) m.put(legacy, A_PANEL);
+            if (legacyMenuKey > 0) m.put(legacyMenuKey, A_PANEL);
             return m;
         }
         for (String item : raw.split(",")) {

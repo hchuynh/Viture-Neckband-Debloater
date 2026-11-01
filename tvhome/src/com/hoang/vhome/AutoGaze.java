@@ -44,6 +44,7 @@ final class AutoGaze implements InputManager.InputDeviceListener {
     AutoGaze(AccessibilityService s) {
         this.s = s;
         am = s.getSystemService(AudioManager.class);
+        pm = s.getSystemService(android.os.PowerManager.class);
         im = s.getSystemService(InputManager.class);
     }
 
@@ -53,10 +54,12 @@ final class AutoGaze implements InputManager.InputDeviceListener {
             if (watch) {
                 am.registerAudioPlaybackCallback(playback, h);
                 s.getContentResolver().registerContentObserver(android.provider.Settings.Global.getUriFor(HeadGazeTile.KEY), false, gazeObserver);
+                s.registerReceiver(screenOn, new android.content.IntentFilter(android.content.Intent.ACTION_SCREEN_ON));
                 check();
             } else {
                 am.unregisterAudioPlaybackCallback(playback);
                 s.getContentResolver().unregisterContentObserver(gazeObserver);
+                try { s.unregisterReceiver(screenOn); } catch (Exception ignored) { }
                 h.removeCallbacks(poll);
                 release(true);
             }
@@ -101,7 +104,18 @@ final class AutoGaze implements InputManager.InputDeviceListener {
     // ---------------------------------------------------------------- watch mode
     void playbackChanged() { h.removeCallbacks(poll); check(); }
 
+    private final android.os.PowerManager pm;
+    private final ScreenOn screenOn = new ScreenOn(this);
+
+    /** Screen on again: look at once instead of polling while it was off. */
+    static final class ScreenOn extends android.content.BroadcastReceiver {
+        private final AutoGaze g;
+        ScreenOn(AutoGaze g) { this.g = g; }
+        @Override public void onReceive(android.content.Context c, android.content.Intent i) { g.playbackChanged(); }
+    }
+
     private void check() {
+        if (!pm.isInteractive()) { h.removeCallbacks(poll); return; }   // music with the screen off: nothing to watch
         boolean playing = am.isMusicActive();
         boolean full = playing && fullScreen();
         if (full) {

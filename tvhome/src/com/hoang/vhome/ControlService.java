@@ -53,7 +53,7 @@ public class ControlService extends AccessibilityService {
     private long closedByOutsideAt = 0;   // so a click on the button that closes the panel does not reopen it
     private Map<Integer, String> keymap;
     private boolean capturing = false;
-    private final Runnable fadeOut = () -> { if (panel == null && fab != null) fab.animate().alpha(0f).setDuration(350).start(); };
+    private final Runnable fadeOut = () -> { if (panel == null && fab != null) { fabShown = false; fab.animate().alpha(0f).setDuration(350).start(); } };
     private final Runnable stopCapture = () -> { if (capturing) { capturing = false; pageButtons(); } };
 
     private ContentObserver observer;
@@ -240,8 +240,10 @@ public class ControlService extends AccessibilityService {
     private long launcherHomeClickAt = 0, ownHomeAt = 0;
 
     /** A Home key press that neither the taskbar Home button nor TV Home itself caused: the neckband hold. */
-    boolean homeIsNeckbandHold() {
-        long now = SystemClock.uptimeMillis();
+    boolean homeIsNeckbandHold() { return isNeckbandHold(SystemClock.uptimeMillis(), launcherHomeClickAt, ownHomeAt); }
+
+    /** Pure, unit tested: a Home key press is the neckband hold unless the taskbar Home button or TV Home caused it just before. */
+    static boolean isNeckbandHold(long now, long launcherHomeClickAt, long ownHomeAt) {
         return now - launcherHomeClickAt > 1500 && now - ownHomeAt > 2000;
     }
 
@@ -312,7 +314,7 @@ public class ControlService extends AccessibilityService {
     private void refreshAutoGaze() {
         int b = Profiles.bits(this, Profiles.current(this));
         if (autoGaze != null) autoGaze.configure(Profiles.has(b, Profiles.WATCH), Profiles.has(b, Profiles.PERIPHERAL));
-        if (hider != null) setHideCursor(Prefs.getInt(this, Prefs.HIDE_CURSOR, 1) == 1);   // hover reports also feed watch mode
+        updateEventTypes();   // hover reports also feed watch mode
     }
 
     private void activate(int profile) {
@@ -504,7 +506,7 @@ public class ControlService extends AccessibilityService {
     }
 
     // ------------------------------------------------------------------ welcome tour
-    private static final String[][] TOUR = {
+    static final String[][] TOUR = {
         {"Welcome to TV Home", "TV Home makes Google TV your home on the VITURE Neckband and adds a few handy controls. "
             + "This short tour shows the main ones.\n\nTo move through it, turn your head to move the pointer onto Next, "
             + "then click by pressing either volume button on the neckband (with head gaze on, they act as click buttons)."},
@@ -596,15 +598,23 @@ public class ControlService extends AccessibilityService {
 
     /** Hover reports are only requested while "Hide cursor when still" is on: no cost otherwise. */
     private void setHideCursor(boolean on) {
-        android.accessibilityservice.AccessibilityServiceInfo info = getServiceInfo();
-        if (info != null) {
-            if (on || (autoGaze != null && autoGaze.wantsHover())) info.eventTypes |= AccessibilityEvent.TYPE_VIEW_HOVER_ENTER;
-            else info.eventTypes &= ~AccessibilityEvent.TYPE_VIEW_HOVER_ENTER;
-            info.eventTypes |= AccessibilityEvent.TYPE_VIEW_CLICKED;   // to recognise the taskbar Home button
-            setServiceInfo(info);
-        }
         hider.setEnabled(on);
+        updateEventTypes();
         updatePause();
+    }
+
+    /**
+     * Ask Android only for the events a switched-on feature needs, so the service is not woken for nothing:
+     * pointer hovers for "Hide when still" and watch mode, clicks only to tell the taskbar Home button
+     * from the volume-up hold.
+     */
+    private void updateEventTypes() {
+        android.accessibilityservice.AccessibilityServiceInfo info = getServiceInfo();
+        if (info == null) return;
+        int t = AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED;
+        if (Prefs.getInt(this, Prefs.HIDE_CURSOR, 1) == 1 || (autoGaze != null && autoGaze.wantsHover())) t |= AccessibilityEvent.TYPE_VIEW_HOVER_ENTER;
+        if (Prefs.getInt(this, Prefs.HOLD_UP, 1) != 0) t |= AccessibilityEvent.TYPE_VIEW_CLICKED;
+        if (info.eventTypes != t) { info.eventTypes = t; setServiceInfo(info); }
     }
 
     /** Never hide the cursor while the panel, a popup or the edge bars are open. */
@@ -628,10 +638,15 @@ public class ControlService extends AccessibilityService {
         super.onDestroy();
     }
 
+    private boolean fabShown = false;
+
     private void reveal() {
         h.removeCallbacks(fadeOut);
-        fab.animate().cancel();
-        fab.animate().alpha(1f).setDuration(120).start();
+        if (!fabShown) {   // called on every pointer move over the button: animate only when it is hidden
+            fabShown = true;
+            fab.animate().cancel();
+            fab.animate().alpha(1f).setDuration(120).start();
+        }
         // Each pointer move over the button calls this again. If moves stop without an exit (the pointer
         // rests on it, or head gaze is switched off by watch mode), it still fades: it never stays over a video.
         h.postDelayed(fadeOut, 2500);
@@ -861,7 +876,7 @@ public class ControlService extends AccessibilityService {
         int hold = Prefs.getInt(this, Prefs.HOLD_UP, 1);   // 1 scroll and media, 2 quick menu, 0 Home
         target.addView(cell(Icon.SCROLL, "Hold volume up", null, segmented(
             new String[]{"Scroll and media", "Quick menu", "Home"}, hold == 1 ? 0 : hold == 2 ? 1 : 2,
-            i -> Prefs.putInt(this, Prefs.HOLD_UP, i == 0 ? 1 : i == 1 ? 2 : 0))), cellLp());
+            i -> { Prefs.putInt(this, Prefs.HOLD_UP, i == 0 ? 1 : i == 1 ? 2 : 0); updateEventTypes(); })), cellLp());
         target.addView(cols);
 
         target = left;
@@ -1355,7 +1370,7 @@ public class ControlService extends AccessibilityService {
         return d;
     }
 
-    private static int mix(int a, int b, float t) {
+    static int mix(int a, int b, float t) {
         int ar = (a >> 16) & 255, ag = (a >> 8) & 255, ab = a & 255, aa = (a >>> 24);
         int br = (b >> 16) & 255, bg = (b >> 8) & 255, bb = b & 255, ba = (b >>> 24);
         return (Math.round(aa + (ba - aa) * t) << 24) | (Math.round(ar + (br - ar) * t) << 16) | (Math.round(ag + (bg - ag) * t) << 8) | Math.round(ab + (bb - ab) * t);

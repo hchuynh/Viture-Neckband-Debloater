@@ -36,3 +36,7 @@ If the local adb crashes with `fdsan` or `daemon didn't ACK` (seen in some VMs),
 - "Android System" in the battery screen is UID 1000: Viture's XR layer, Viture's 3D home, the AI service and vendor services together. `analyze` breaks it down.
 - The battery estimate lags after big changes. `reset-stats` and 30 to 60 minutes of use give a clean reading; discharge steps in `dumpsys batterystats` are the ground truth.
 - Head gaze disables volume keys (Viture behavior). The TV Home quick-settings tile toggles it.
+
+## Changing TV Home
+
+Before proposing a TV Home build for release, run the unit tests (`tvhome/test/run-unit-tests.sh`) and the read-only device smoke test (`tvhome/test/device-smoke.sh <ip:port>`), and walk the manual checklist in docs/TESTING.md with the person wearing the glasses. Never attach smoke-test screenshots anywhere: they show the person's apps and content.
