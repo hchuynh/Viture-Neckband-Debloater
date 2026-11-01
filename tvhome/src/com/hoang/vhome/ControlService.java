@@ -245,9 +245,19 @@ public class ControlService extends AccessibilityService {
         return now - launcherHomeClickAt > 1500 && now - ownHomeAt > 2000;
     }
 
+    /** The volume-up hold: scroll and media controls (1) or the panel in the centre (2); again closes it. */
     void showQuickControls() {
-        if (edge == null) return;
-        h.post(() -> { if (edge.isOpen()) edge.hideAll(); else edge.openQuick(); });
+        int what = Prefs.getInt(this, Prefs.HOLD_UP, 1);
+        h.post(() -> {
+            if (what == 2) {
+                if (panel != null) { hidePanel(); return; }
+                if (edge != null) edge.hideAll();
+                panelCentered = true;
+                showPanel();
+            } else if (edge != null) {
+                if (edge.isOpen()) edge.hideAll(); else edge.openQuick();
+            }
+        });
     }
 
     private void goHome() { ownHomeAt = SystemClock.uptimeMillis(); performGlobalAction(GLOBAL_ACTION_HOME); }
@@ -650,6 +660,8 @@ public class ControlService extends AccessibilityService {
     // ------------------------------------------------------------------ panel
     private void togglePanel() { if (panel == null) showPanel(); else hidePanel(); }
 
+    private boolean panelCentered = false;   // opened by the volume-up hold: in the middle of the view
+
     private void showPanel() {
         hidePopup();
         panel = new HoverFrame(this, inside -> { if (inside) reveal(); });
@@ -690,9 +702,13 @@ public class ControlService extends AccessibilityService {
 
         panel.setOnBack(this::hidePanel);
         WindowManager.LayoutParams lp = focusParams(WindowManager.LayoutParams.WRAP_CONTENT, WindowManager.LayoutParams.WRAP_CONTENT);
-        lp.gravity = Gravity.END | Gravity.BOTTOM;   // opens upward from the button, above the taskbar
-        lp.x = dp(RIGHT_DP - 120);
-        lp.y = dp(BOTTOM_DP + SIZE_DP + 10);
+        if (panelCentered) lp.gravity = Gravity.CENTER;   // where the pointer usually is: no head travel
+        else {
+            lp.gravity = Gravity.END | Gravity.BOTTOM;   // opens upward from the button, above the taskbar
+            lp.x = dp(RIGHT_DP - 120);
+            lp.y = dp(BOTTOM_DP + SIZE_DP + 10);
+        }
+        panelCentered = false;
         wm.addView(panel, lp);
         updatePause();
     }
@@ -842,9 +858,10 @@ public class ControlService extends AccessibilityService {
             i -> Prefs.putInt(this, Prefs.HOME_MODE, i)));
         target.addView(home, cellLp());
         // what holding the neckband volume up does (Viture sends Home for it while head gaze is on)
+        int hold = Prefs.getInt(this, Prefs.HOLD_UP, 1);   // 1 scroll and media, 2 quick menu, 0 Home
         target.addView(cell(Icon.SCROLL, "Hold volume up", null, segmented(
-            new String[]{"Scroll and media", "Home"}, Prefs.getInt(this, Prefs.HOLD_UP, 1) == 1 ? 0 : 1,
-            i -> Prefs.putInt(this, Prefs.HOLD_UP, i == 0 ? 1 : 0))), cellLp());
+            new String[]{"Scroll and media", "Quick menu", "Home"}, hold == 1 ? 0 : hold == 2 ? 1 : 2,
+            i -> Prefs.putInt(this, Prefs.HOLD_UP, i == 0 ? 1 : i == 1 ? 2 : 0))), cellLp());
         target.addView(cols);
 
         target = left;

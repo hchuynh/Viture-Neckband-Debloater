@@ -35,7 +35,7 @@ public class HomeActivity extends Activity {
     private void handle(Intent i) {
         ControlService cs = ControlService.instance;
         boolean fromKey = i != null && i.getBooleanExtra("android.intent.extra.FROM_HOME_KEY", false);
-        if (fromKey && cs != null && Prefs.getInt(this, Prefs.HOLD_UP, 1) == 1 && cs.homeIsNeckbandHold()) {
+        if (fromKey && cs != null && Prefs.getInt(this, Prefs.HOLD_UP, 1) != 0 && cs.homeIsNeckbandHold()) {
             // Android already moved the home screen forward: bring the app that was in front straight back
             // (the Android home screen is what Android shows now, so it needs nothing)
             String fg = lastForeground();
