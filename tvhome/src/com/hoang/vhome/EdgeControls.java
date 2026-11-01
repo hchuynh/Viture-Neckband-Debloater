@@ -51,7 +51,26 @@ final class EdgeControls {
     private OpenListener openListener;
     void setOpenListener(OpenListener l) { openListener = l; }
 
-    EdgeControls(AccessibilityService s) { this.s = s; this.wm = s.getSystemService(WindowManager.class); }
+    EdgeControls(AccessibilityService s) {
+        this.s = s; this.wm = s.getSystemService(WindowManager.class);
+        android.os.HandlerThread t = new android.os.HandlerThread("vnd-scroll");
+        t.start();
+        worker = new Handler(t.getLooper());
+    }
+
+    // Scroll commands are blocking calls into the app in front. They run on their own thread, one at a
+    // time: a busy app (YouTube loading previews) then makes TV Home skip steps instead of freezing
+    // and replaying a backlog all at once.
+    private final Handler worker;
+    private volatile boolean busy = false;
+    private volatile AccessibilityNodeInfo cached;   // scroll target, kept while the bar is open
+    private volatile boolean stopRun = false;
+
+    private void scrollAsync(int dir, boolean swipeFallback) {
+        if (busy) return;
+        busy = true;
+        worker.post(() -> { try { scroll(dir, swipeFallback); } finally { busy = false; } });
+    }
 
     boolean isOpen() { return scrollBar != null; }
 
@@ -174,6 +193,8 @@ final class EdgeControls {
         boolean wasOpen = isOpen();
         h.removeCallbacks(open); h.removeCallbacks(openLeft); h.removeCallbacks(openRight); h.removeCallbacks(hideAll); h.removeCallbacks(outsideClose); h.removeCallbacks(watch);
         stopDrag();
+        stopRun = true;
+        cached = null;
         if (scrollBar != null) { try { wm.removeView(scrollBar); } catch (Exception ignored) { } scrollBar = null; }
         if (mediaBar != null) { try { wm.removeView(mediaBar); } catch (Exception ignored) { } mediaBar = null; }
         hovering = 0;
@@ -198,7 +219,7 @@ final class EdgeControls {
      */
     private View seekButton(int icon, int dir) {
         View b = new IconView(s, icon, 28);
-        b.setBackground(round(ControlService.BUTTON, 999));
+        b.setBackground(ControlService.pressable(ControlService.BUTTON, 999));
         b.setOnClickListener(v -> {
             keepOpen();
             Rect player = youtubePlayer();
@@ -248,7 +269,8 @@ final class EdgeControls {
     private View scroller() {
         LinearLayout pill = new LinearLayout(s);
         pill.setOrientation(LinearLayout.VERTICAL);
-        pill.setBackground(round(ControlService.BUTTON & 0xE6FFFFFF, 999));
+        pill.setBackground(ControlService.pressable(ControlService.BUTTON & 0xE6FFFFFF, 999));
+        pill.setClickable(true);   // so it shows hover and press feedback
         pill.addView(new IconView(s, Icon.UP, 22), new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1));
         pill.addView(new IconView(s, Icon.DOWN, 22), new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1));
         pill.setOnTouchListener((v, e) -> {
@@ -291,52 +313,87 @@ final class EdgeControls {
         }
     }
 
-    private void singlePage() { scroll(lastClickDir, true); }
+    private void singlePage() { scrollAsync(lastClickDir, true); }
 
+    /** Double-click: keep scrolling the same target until it reports the end. */
     private void toEnd(int dir, int n) {
-        if (n >= 60) return;
-        if (scroll(dir, n == 0)) h.postDelayed(() -> toEnd(dir, n + 1), 70);
+        if (busy) return;
+        busy = true;
+        stopRun = false;
+        worker.post(() -> {
+            try {
+                for (int i = 0; i < 60 && !stopRun; i++) {
+                    if (!scroll(dir, i == 0)) break;
+                    SystemClock.sleep(70);
+                }
+            } finally { busy = false; }
+        });
     }
 
     private void dragStep() {
         if (!dragging || dragSpeed <= 0) return;
-        scroll(dragDir, false);
+        scrollAsync(dragDir, false);   // skipped while the previous step is still running
         h.postDelayed(dragStep, Math.max(60, 480 - dragSpeed * 45));   // further = faster
     }
 
     private void stopDrag() { dragging = false; dragSpeed = 0; h.removeCallbacks(dragStep); }
 
-    /** Scrolls the largest scrollable area of the app in front. Falls back to a swipe when allowed. */
+    /** Scrolls the app in front by one page. Falls back to a swipe when allowed. Runs on the worker thread. */
     private boolean scroll(int dir, boolean swipeFallback) {
         AccessibilityNodeInfo node = target();
-        int action = dir > 0 ? AccessibilityNodeInfo.ACTION_SCROLL_FORWARD : AccessibilityNodeInfo.ACTION_SCROLL_BACKWARD;
-        if (node != null && node.performAction(action)) return true;
-        if (swipeFallback) swipe(dir);
+        if (node != null) {
+            // explicit up/down first: sideways rows (Shorts, chips) ignore them
+            int vertical = dir > 0 ? android.R.id.accessibilityActionScrollDown : android.R.id.accessibilityActionScrollUp;
+            if (supports(node, vertical) && node.performAction(vertical)) return true;
+            if (node.performAction(dir > 0 ? AccessibilityNodeInfo.ACTION_SCROLL_FORWARD : AccessibilityNodeInfo.ACTION_SCROLL_BACKWARD)) return true;
+        }
+        if (swipeFallback) h.post(() -> swipe(dir));
         return false;
     }
 
+    private static boolean supports(AccessibilityNodeInfo n, int id) {
+        for (AccessibilityNodeInfo.AccessibilityAction a : n.getActionList()) if (a.getId() == id) return true;
+        return false;
+    }
+
+    /**
+     * The area to scroll: chosen once when the bar opens and kept while it stays open, so a page that
+     * rearranges itself while scrolling (YouTube's top bar collapsing) does not switch targets halfway.
+     * Prefers vertical lists that contain the middle of the screen, then the largest one.
+     */
     private AccessibilityNodeInfo target() {
+        AccessibilityNodeInfo c = cached;
+        if (c != null && c.refresh() && c.isVisibleToUser()) return c;
+        DisplayMetrics m = s.getResources().getDisplayMetrics();
+        int cx = m.widthPixels / 2, cy = m.heightPixels / 2;
         AccessibilityNodeInfo best = null;
-        long bestArea = 0;
-        List<AccessibilityWindowInfo> windows = s.getWindows();
-        for (AccessibilityWindowInfo w : windows) {
+        long bestScore = 0;
+        for (AccessibilityWindowInfo w : s.getWindows()) {
             if (w.getType() != AccessibilityWindowInfo.TYPE_APPLICATION) continue;
             AccessibilityNodeInfo root = w.getRoot();
             if (root == null) continue;
             ArrayDeque<AccessibilityNodeInfo> q = new ArrayDeque<>();
             q.add(root);
             int seen = 0;
-            while (!q.isEmpty() && seen++ < 600) {
+            while (!q.isEmpty() && seen++ < 2000) {
                 AccessibilityNodeInfo n = q.poll();
                 if (n.isScrollable() && n.isVisibleToUser()) {
                     Rect r = new Rect(); n.getBoundsInScreen(r);
-                    long area = (long) r.width() * r.height();
-                    if (area > bestArea) { bestArea = area; best = n; }
+                    long score = (long) r.width() * r.height();
+                    AccessibilityNodeInfo.CollectionInfo ci = n.getCollectionInfo();
+                    boolean vertical = supports(n, android.R.id.accessibilityActionScrollDown) || supports(n, android.R.id.accessibilityActionScrollUp);
+                    boolean horizontal = supports(n, android.R.id.accessibilityActionScrollLeft) || supports(n, android.R.id.accessibilityActionScrollRight);
+                    boolean sideways = (horizontal && !vertical)
+                        || (ci != null && ci.getRowCount() == 1 && ci.getColumnCount() > 1) || r.height() < r.width() / 4;
+                    if (sideways) score /= 100;
+                    if (r.contains(cx, cy)) score *= 4;
+                    if (score > bestScore) { bestScore = score; best = n; }
                 }
-                for (int i = 0; i < n.getChildCount(); i++) { AccessibilityNodeInfo c = n.getChild(i); if (c != null) q.add(c); }
+                for (int i = 0; i < n.getChildCount(); i++) { AccessibilityNodeInfo ch = n.getChild(i); if (ch != null) q.add(ch); }
             }
             if (best != null) break;   // windows come front to back: stop at the first app with something to scroll
         }
+        cached = best;
         return best;
     }
 
@@ -353,7 +410,7 @@ final class EdgeControls {
     // ---------------------------------------------------------------- views
     private View button(int icon, int key) {
         View b = new IconView(s, icon, 28);
-        b.setBackground(round(ControlService.BUTTON, 999));
+        b.setBackground(ControlService.pressable(ControlService.BUTTON, 999));
         b.setOnClickListener(v -> media(key));
         return b;
     }
@@ -362,10 +419,10 @@ final class EdgeControls {
     private View feedButton(int icon, int dir) {
         View b = new IconView(s, icon, 28);
         android.graphics.drawable.LayerDrawable bg = new android.graphics.drawable.LayerDrawable(new android.graphics.drawable.Drawable[]{
-            round(ControlService.POPUP & 0xE6FFFFFF, 999), round(ControlService.BUTTON, 999)});
+            round(ControlService.POPUP & 0xE6FFFFFF, 999), ControlService.pressable(ControlService.BUTTON, 999)});
         bg.setLayerInset(1, dp(8), dp(8), dp(8), dp(8));
         b.setBackground(bg);
-        b.setOnClickListener(v -> { keepOpen(); scroll(dir, true); });
+        b.setOnClickListener(v -> { keepOpen(); scrollAsync(dir, true); });
         return b;
     }
 

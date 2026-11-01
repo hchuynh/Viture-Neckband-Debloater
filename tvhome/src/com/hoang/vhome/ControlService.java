@@ -236,7 +236,7 @@ public class ControlService extends AccessibilityService {
             getContentResolver().registerContentObserver(Settings.Global.getUriFor(k), false, observer);
 
         fab = new TextView(this);
-        fab.setBackground(round(PILL, 999));
+        fab.setBackground(pressable(PILL, 999));
         int pad = dp(14);
         Icon menu = new Icon(Icon.MENU, FG, PILL);
         menu.setBounds(0, 0, dp(SIZE_DP) - 2 * pad, dp(SIZE_DP) - 2 * pad);
@@ -305,7 +305,7 @@ public class ControlService extends AccessibilityService {
         LinearLayout r = new LinearLayout(this);
         r.setOrientation(LinearLayout.HORIZONTAL);
         r.setGravity(Gravity.CENTER_VERTICAL);
-        r.setBackground(round(BUTTON, dp(12)));
+        r.setBackground(pressable(BUTTON, dp(12)));
         r.setPaddingRelative(dp(22), dp(10), dp(18), dp(10));
         LinearLayout texts = new LinearLayout(this);
         texts.setOrientation(LinearLayout.VERTICAL);
@@ -394,7 +394,7 @@ public class ControlService extends AccessibilityService {
             f.removeAllViews();
             iv[0] = new EdgeControls.IconView(this, icon, 22, state[0] ? 0xFF0F1426 : FG, state[0] ? ACCENT : 0xFF1C2340, !state[0]);
             f.addView(iv[0]);
-            f.setBackground(state[0] ? round(ACCENT, 999) : null);
+            f.setBackground(state[0] ? pressable(ACCENT, 999) : pressable(0x001C2340, 999));
         };
         paint.run();
         f.setOnClickListener(v -> { state[0] = t.set(!state[0]); paint.run(); });
@@ -595,6 +595,9 @@ public class ControlService extends AccessibilityService {
         h.removeCallbacks(fadeOut);
         fab.animate().cancel();
         fab.animate().alpha(1f).setDuration(120).start();
+        // Each pointer move over the button calls this again. If moves stop without an exit (the pointer
+        // rests on it, or head gaze is switched off by watch mode), it still fades: it never stays over a video.
+        h.postDelayed(fadeOut, 2500);
     }
 
     private void concealSoon() {
@@ -673,7 +676,7 @@ public class ControlService extends AccessibilityService {
         LinearLayout r = new LinearLayout(this);
         r.setOrientation(LinearLayout.HORIZONTAL);
         r.setGravity(Gravity.CENTER_VERTICAL);
-        r.setBackground(round(BUTTON, dp(12)));
+        r.setBackground(pressable(BUTTON, dp(12)));
         r.setPaddingRelative(dp(24), dp(10), dp(16), dp(10));
         LinearLayout texts = new LinearLayout(this);
         texts.setOrientation(LinearLayout.VERTICAL);
@@ -896,7 +899,7 @@ public class ControlService extends AccessibilityService {
         LinearLayout r = new LinearLayout(this);
         r.setOrientation(LinearLayout.HORIZONTAL);
         r.setGravity(Gravity.CENTER_VERTICAL);
-        r.setBackground(round(BUTTON, dp(12)));
+        r.setBackground(pressable(BUTTON, dp(12)));
         r.setPaddingRelative(dp(22), 0, dp(18), 0);
         View ic = new EdgeControls.IconView(this, icon, 28);
         r.addView(ic, new LinearLayout.LayoutParams(dp(28), dp(28)));
@@ -947,12 +950,12 @@ public class ControlService extends AccessibilityService {
             t.setPadding(dp(18), dp(8), dp(18), dp(8));
             t.setOnClickListener(v -> {
                 for (int k = 0; k < items.length; k++) {
-                    items[k].setBackground(k == idx ? round(ACCENT, 999) : null);
+                    items[k].setBackground(k == idx ? round(ACCENT, 999) : pressable(0x001C2340, 999));
                     items[k].setTextColor(k == idx ? 0xFF0F1426 : FG);
                 }
                 choice.chosen(idx);
             });
-            t.setBackground(i == selected ? round(ACCENT, 999) : null);
+            t.setBackground(i == selected ? round(ACCENT, 999) : pressable(0x001C2340, 999));
             t.setTextColor(i == selected ? 0xFF0F1426 : FG);
             items[i] = t;
             bar.addView(t);
@@ -1160,7 +1163,7 @@ public class ControlService extends AccessibilityService {
         b.setGravity(Gravity.CENTER_VERTICAL);
         b.setPaddingRelative(dp(24), dp(14), dp(20), dp(14));
         setIcon(b, icon);
-        b.setBackground(round(BUTTON, dp(12)));
+        b.setBackground(pressable(BUTTON, dp(12)));
         b.setOnClickListener(v -> {
             if (closesPanel) { hidePanel(); h.postDelayed(() -> action.onClick(v), 150); }
             else action.onClick(v);
@@ -1173,7 +1176,7 @@ public class ControlService extends AccessibilityService {
         LinearLayout r = new LinearLayout(this);
         r.setOrientation(LinearLayout.HORIZONTAL);
         r.setGravity(Gravity.CENTER_VERTICAL);
-        r.setBackground(round(BUTTON, dp(12)));
+        r.setBackground(pressable(BUTTON, dp(12)));
         r.setPaddingRelative(0, 0, dp(18), 0);
         TextView t = text(label, 20, FG);
         t.setGravity(Gravity.CENTER_VERTICAL);
@@ -1192,7 +1195,7 @@ public class ControlService extends AccessibilityService {
         LinearLayout r = new LinearLayout(this);
         r.setOrientation(LinearLayout.HORIZONTAL);
         r.setGravity(Gravity.CENTER_VERTICAL);
-        r.setBackground(round(BUTTON, dp(12)));
+        r.setBackground(pressable(BUTTON, dp(12)));
         r.setPaddingRelative(0, 0, dp(20), 0);
         TextView t = text(label, 20, FG);
         t.setGravity(Gravity.CENTER_VERTICAL);
@@ -1208,7 +1211,7 @@ public class ControlService extends AccessibilityService {
     private LinearLayout valueRow(String label, String value, View.OnClickListener action) {
         LinearLayout r = new LinearLayout(this);
         r.setOrientation(LinearLayout.VERTICAL);
-        r.setBackground(round(BUTTON, dp(12)));
+        r.setBackground(pressable(BUTTON, dp(12)));
         r.setPaddingRelative(dp(24), dp(12), dp(20), dp(12));
         r.addView(text(label, 19, FG));
         TextView v = text(value + "  ›", 16, ACCENT);
@@ -1224,7 +1227,7 @@ public class ControlService extends AccessibilityService {
         d.setBounds(0, 0, dp(26), dp(26));
         b.setCompoundDrawablesRelative(d, null, null, null);
         b.setPadding(dp(11), dp(11), dp(11), dp(11));
-        b.setBackground(round(BUTTON, 999));
+        b.setBackground(pressable(BUTTON, 999));
         b.setOnClickListener(action);
         return b;
     }
@@ -1282,6 +1285,22 @@ public class ControlService extends AccessibilityService {
     }
 
     // ------------------------------------------------------------------ helpers
+    /** Background with feedback: lighter while the pointer is over it, lighter still while pressed. */
+    static android.graphics.drawable.Drawable pressable(int argb, int radius) {
+        android.graphics.drawable.StateListDrawable d = new android.graphics.drawable.StateListDrawable();
+        d.addState(new int[]{android.R.attr.state_pressed}, round(mix(argb, 0xFFFFFFFF, 0.24f), radius));
+        d.addState(new int[]{android.R.attr.state_hovered}, round(mix(argb, 0xFF9FB3FF, 0.18f), radius));
+        d.addState(new int[]{}, round(argb, radius));
+        d.setExitFadeDuration(120);
+        return d;
+    }
+
+    private static int mix(int a, int b, float t) {
+        int ar = (a >> 16) & 255, ag = (a >> 8) & 255, ab = a & 255, aa = (a >>> 24);
+        int br = (b >> 16) & 255, bg = (b >> 8) & 255, bb = b & 255, ba = (b >>> 24);
+        return (Math.round(aa + (ba - aa) * t) << 24) | (Math.round(ar + (br - ar) * t) << 16) | (Math.round(ag + (bg - ag) * t) << 8) | Math.round(ab + (bb - ab) * t);
+    }
+
     private int dp(int v) { return Math.round(v * getResources().getDisplayMetrics().density); }
     private static GradientDrawable round(int argb, int radius) {
         GradientDrawable d = new GradientDrawable(); d.setColor(argb); d.setCornerRadius(radius); return d;
